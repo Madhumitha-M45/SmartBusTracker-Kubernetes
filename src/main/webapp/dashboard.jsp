@@ -113,70 +113,94 @@
     </div>
 
     <!-- ================= ROUTE ================= -->
-    <div id="route" class="tabContent" style="display:none;">
-        <div class="card">
-            <h2>Manage Route</h2>
-            <div class="formGrid">
-                <div class="formGroup">
-                    <label>Route ID</label>
-                    <input type="text" id="routeInputId">
-                </div>
-                <div class="formGroup">
-                    <label>Route Name</label>
-                    <input type="text" id="routeName">
-                </div>
-                <div class="formGroup">
-                    <label>Source</label>
-                    <input type="text" id="source" placeholder="e.g. Chennai">
-                </div>
-                <div class="formGroup">
-                    <label>Destination</label>
-                    <input type="text" id="destination" placeholder="e.g. Madurai">
-                </div>
-                <div class="formGroup">
-                    <label>Total Distance (km)</label>
-                    <input type="number" id="distance" step="0.1" min="0">
-                </div>
+  <!-- ================= ROUTE ================= -->
+<div id="route" class="tabContent" style="display:none;">
+
+    <div class="card">
+
+        <h2>Manage Route</h2>
+
+        <div class="formGrid">
+
+            <div class="formGroup">
+                <label>Route ID</label>
+                <input type="text" id="routeInputId">
             </div>
-            <br>
-            <h3>Select Stops and Enter Distance</h3>
-            <table id="routeStopsTable">
-                <thead>
-                    <tr>
-                        <th>Select</th>
-                        <th>Stop Name</th>
-                        <th>Stop Order</th>
-                        <th>Distance From Previous Stop (km)</th>
-                    </tr>
-                </thead>
-                <tbody id="routeStopsBody"></tbody>
-            </table>
-            <br>
-            <button class="btnAdd" onclick="addRoute()">Add Route</button>
-            <button class="btnUpdate" onclick="updateRoute()">Update Route</button>
-            <button class="btnDelete" onclick="deleteRoute()">Delete Route</button>
-            <button class="btnClear" onclick="clearRoute()">Clear</button>
+
+            <div class="formGroup">
+                <label>Route Name</label>
+                <input type="text" id="routeName">
+            </div>
+
+            <div class="formGroup">
+                <label>Total Distance (km)</label>
+                <input type="number"
+                       id="distance"
+                       step="0.1"
+                       min="0">
+            </div>
+
         </div>
 
-        <div class="card">
-            <h2>Route List</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Route ID</th>
-                        <th>Route Name</th>
-                        <th>Source</th>
-                        <th>Destination</th>
-                        <th>Total Distance</th>
-                        <th>Stops</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="routeTableBody"></tbody>
-            </table>
-        </div>
+        <br>
+
+        <h3>Select Stops and Enter Distance</h3>
+
+        <table id="routeStopsTable">
+
+            <thead>
+
+                <tr>
+
+                    <th>Select</th>
+                    <th>Stop Name</th>
+                    <th>Stop Order</th>
+                    <th>Distance From Previous Stop (km)</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody id="routeStopsBody"></tbody>
+
+        </table>
+
+        <br>
+
+        <button class="btnAdd" onclick="addRoute()">Add Route</button>
+        <button class="btnUpdate" onclick="updateRoute()">Update Route</button>
+        <button class="btnDelete" onclick="deleteRoute()">Delete Route</button>
+        <button class="btnClear" onclick="clearRoute()">Clear</button>
+
     </div>
 
+    <div class="card">
+
+        <h2>Route List</h2>
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Route ID</th>
+                    <th>Route Name</th>
+                    <th>Total Distance</th>
+                    <th>Stops</th>
+                    <th>Action</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody id="routeTableBody"></tbody>
+
+        </table>
+
+    </div>
+
+</div>
     <!-- ================= SCHEDULE ================= -->
     <div id="schedule" class="tabContent" style="display:none;">
         <div class="card">
@@ -190,10 +214,25 @@
                     <label>Bus</label>
                     <select id="scheduleBusId"></select>
                 </div>
-                <div class="formGroup">
-                    <label>Route</label>
-                    <select id="scheduleRouteId"></select>
-                </div>
+               <div class="formGroup">
+    <label>Route</label>
+    <select id="scheduleRouteId"
+            onchange="loadSourceDestination()">
+    </select>
+</div>
+<div class="formGroup">
+    <label>Source</label>
+    <input type="text"
+           id="sourceName"
+           readonly>
+</div>
+
+<div class="formGroup">
+    <label>Destination</label>
+    <input type="text"
+           id="destinationName"
+           readonly>
+</div>
                 <div class="formGroup">
                     <label>Departure Time</label>
                     <input type="time" id="departureTime">
@@ -228,12 +267,14 @@
                 <thead>
                     <tr>
                         <th>Schedule ID</th>
-                        <th>Bus</th>
-                        <th>Route</th>
-                        <th>Departure</th>
-                        <th>Arrival</th>
-                        <th>Operating Days</th>
-                        <th>Action</th>
+<th>Bus</th>
+<th>Route</th>
+<th>Source</th>
+<th>Destination</th>
+<th>Departure</th>
+<th>Arrival</th>
+<th>Operating Days</th>
+<th>Action</th>
                     </tr>
                 </thead>
                 <tbody id="scheduleTableBody"></tbody>
