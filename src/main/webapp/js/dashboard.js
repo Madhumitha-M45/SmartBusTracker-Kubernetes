@@ -318,15 +318,16 @@ async function loadRoute() {
 
       body.innerHTML += `
 <tr>
-  <td>${route.routeId}</td>
-  <td>${route.routeName}</td>
-  <td>${route.source || ''}</td>
-  <td>${route.destination || ''}</td>
-  <td>${route.distance}</td>
-  <td>${stops}</td>
-  <td>
-    <button class="btnUpdate" onclick="editRoute('${route.routeId}')">Edit</button>
-  </td>
+    <td>${route.routeId}</td>
+    <td>${route.routeName}</td>
+    <td>${route.distance}</td>
+    <td>${stops}</td>
+    <td>
+        <button class="btnUpdate"
+            onclick="editRoute('${route.routeId}')">
+            Edit
+        </button>
+    </td>
 </tr>`;
     });
   } catch (err) {
@@ -384,14 +385,12 @@ function getRouteStops() {
 }
 
 async function addRoute() {
-  const route = {
+ const route = {
     routeId: getVal("routeInputId"),
     routeName: getVal("routeName"),
-    source: getVal("source"),
-    destination: getVal("destination"),
     distance: parseFloat(getVal("distance")),
     routeStops: getRouteStops()
-  };
+};
 
   try {
     const res = await fetch(`${API}/route`, {
@@ -419,8 +418,7 @@ async function editRoute(routeId) {
 
     setVal("routeInputId", route.routeId);
     setVal("routeName", route.routeName);
-    setVal("source", route.source || "");
-    setVal("destination", route.destination || "");
+    
     setVal("distance", route.distance);
 
     document.querySelectorAll("#routeStopsBody tr").forEach((row) => {
@@ -450,8 +448,7 @@ async function updateRoute() {
   const route = {
     routeId: getVal("routeInputId"),
     routeName: getVal("routeName"),
-    source: getVal("source"),
-    destination: getVal("destination"),
+    
     distance: parseFloat(getVal("distance")),
     routeStops: getRouteStops()
   };
@@ -493,8 +490,7 @@ async function deleteRoute() {
 function clearRoute() {
   setVal("routeInputId", "");
   setVal("routeName", "");
-  setVal("source", "");
-  setVal("destination", "");
+  
   setVal("distance", "");
 
   document.querySelectorAll("#routeStopsBody tr").forEach((row) => {
