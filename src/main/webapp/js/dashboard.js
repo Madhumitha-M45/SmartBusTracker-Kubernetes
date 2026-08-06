@@ -709,9 +709,7 @@ function editSchedule(schedule){
 
     setVal("scheduleRouteId", schedule.routeId);
 
-    setVal("sourceName", schedule.sourceName);
-
-    setVal("destinationName", schedule.destinationName);
+    loadSourceDestination();
 
     setVal("departureTime", schedule.departureTime);
 
