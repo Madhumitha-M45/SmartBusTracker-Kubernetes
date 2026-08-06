@@ -524,34 +524,70 @@ function setSelectedDays(daysList) {
 }
 
 async function loadSchedule() {
-  try {
-    const res = await fetch(`${API}/schedule`);
-    const data = await res.json();
-    const body = document.getElementById("scheduleTableBody");
-    if (!body) return;
 
-    body.innerHTML = data
-      .map((schedule) => {
-        const rawDays = schedule.operatingDays || schedule.day;
-        const dayVal = Array.isArray(rawDays) ? rawDays.join(", ") : rawDays || "";
+    try {
 
-        return `
+        const res = await fetch(`${API}/schedule`);
+
+        const data = await res.json();
+
+        const body = document.getElementById("scheduleTableBody");
+
+        body.innerHTML = "";
+
+        data.forEach(schedule => {
+
+            const day =
+                schedule.operatingDays
+                    ? schedule.operatingDays.join(", ")
+                    : "";
+
+            body.innerHTML += `
+
 <tr>
-  <td>${schedule.scheduleId}</td>
-  <td>${schedule.busId}</td>
-  <td>${schedule.routeId}</td>
-  <td>${schedule.departureTime}</td>
-  <td>${schedule.arrivalTime}</td>
-  <td>${dayVal}</td>
-  <td>
-    <button class="btnUpdate" onclick="editSchedule('${schedule.scheduleId}', '${schedule.busId}', '${schedule.routeId}', '${schedule.departureTime}', '${schedule.arrivalTime}', '${dayVal}')">Edit</button>
-  </td>
-</tr>`;
-      })
-      .join("");
-  } catch (err) {
-    console.error(err);
-  }
+
+<td>${schedule.scheduleId}</td>
+
+<td>${schedule.busId}</td>
+
+<td>${schedule.routeId}</td>
+
+<td>${schedule.sourceName}</td>
+
+<td>${schedule.destinationName}</td>
+
+<td>${schedule.departureTime}</td>
+
+<td>${schedule.arrivalTime}</td>
+
+<td>${day}</td>
+
+<td>
+
+<button class="btnUpdate"
+
+onclick='editSchedule(${JSON.stringify(schedule)})'>
+
+Edit
+
+</button>
+
+</td>
+
+</tr>
+
+`;
+
+        });
+
+    }
+
+    catch(err){
+
+        console.error(err);
+
+    }
+
 }
 
 async function loadBusDropdown() {
@@ -573,6 +609,51 @@ async function loadRouteDropdown() {
     console.error(err);
   }
 }
+async function loadSourceDestination(){
+
+    const routeId=getVal("scheduleRouteId");
+
+    if(!routeId){
+
+        setVal("sourceName","");
+
+        setVal("destinationName","");
+
+        return;
+
+    }
+
+    try{
+
+        const res=await fetch(`${API}/route/${routeId}`);
+
+        const route=await res.json();
+
+        if(route.routeStops && route.routeStops.length){
+
+            route.routeStops.sort((a,b)=>a.stopOrder-b.stopOrder);
+
+            setVal("sourceName",route.routeStops[0].stopName);
+
+            setVal(
+
+                "destinationName",
+
+                route.routeStops[route.routeStops.length-1].stopName
+
+            );
+
+        }
+
+    }
+
+    catch(err){
+
+        console.error(err);
+
+    }
+
+}
 
 const formatTime = (timeStr) => (timeStr.length === 5 ? `${timeStr}:00` : timeStr);
 
@@ -584,14 +665,25 @@ async function addSchedule() {
     return;
   }
 
-  const schedule = {
+   const schedule = {
+
     scheduleId: getVal("scheduleId"),
+
     busId: getVal("scheduleBusId"),
+
     routeId: getVal("scheduleRouteId"),
+
+    sourceName: getVal("sourceName"),
+
+    destinationName: getVal("destinationName"),
+
     departureTime: formatTime(getVal("departureTime")),
+
     arrivalTime: formatTime(getVal("arrivalTime")),
+
     operatingDays: selectedDays
-  };
+
+};
 
   try {
     const res = await fetch(`${API}/schedule`, {
@@ -613,15 +705,25 @@ async function addSchedule() {
   }
 }
 
-function editSchedule(id, busId, routeId, departure, arrival, days) {
-  setVal("scheduleId", id);
-  setVal("scheduleBusId", busId);
-  setVal("scheduleRouteId", routeId);
-  setVal("departureTime", departure);
-  setVal("arrivalTime", arrival);
-  setSelectedDays(days);
-}
+function editSchedule(schedule){
 
+    setVal("scheduleId", schedule.scheduleId);
+
+    setVal("scheduleBusId", schedule.busId);
+
+    setVal("scheduleRouteId", schedule.routeId);
+
+    setVal("sourceName", schedule.sourceName);
+
+    setVal("destinationName", schedule.destinationName);
+
+    setVal("departureTime", schedule.departureTime);
+
+    setVal("arrivalTime", schedule.arrivalTime);
+
+    setSelectedDays(schedule.operatingDays);
+
+}
 async function updateSchedule() {
   const selectedDays = getSelectedDays();
 
@@ -631,13 +733,24 @@ async function updateSchedule() {
   }
 
   const schedule = {
+
     scheduleId: getVal("scheduleId"),
+
     busId: getVal("scheduleBusId"),
+
     routeId: getVal("scheduleRouteId"),
+
+    sourceName: getVal("sourceName"),
+
+    destinationName: getVal("destinationName"),
+
     departureTime: formatTime(getVal("departureTime")),
+
     arrivalTime: formatTime(getVal("arrivalTime")),
+
     operatingDays: selectedDays
-  };
+
+};
 
   try {
     const res = await fetch(`${API}/schedule`, {
@@ -683,6 +796,8 @@ function clearSchedule() {
   setVal("scheduleId", "");
   setVal("departureTime", "");
   setVal("arrivalTime", "");
+  setVal("sourceName","");
+ setVal("destinationName","");
 
   const busSelect = document.getElementById("scheduleBusId");
   if (busSelect) busSelect.selectedIndex = 0;
