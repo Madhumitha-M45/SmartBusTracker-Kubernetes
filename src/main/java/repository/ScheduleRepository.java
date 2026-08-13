@@ -1,9 +1,9 @@
 package repository;
 
+import static com.mongodb.client.model.Filters.eq;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.mongodb.client.model.Filters.eq;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -13,52 +13,128 @@ import model.Schedule;
 
 public class ScheduleRepository {
 
-    private MongoCollection<Schedule> collection;
+    private final MongoCollection<Schedule> collection;
 
     public ScheduleRepository() {
 
         MongoDatabase database = MongoDBConfig.getDatabase();
-        collection = database.getCollection("Schedule", Schedule.class);
 
+        // IMPORTANT:
+        // Your collection name is "Schedule"
+        collection = database.getCollection(
+                "Schedule",
+                Schedule.class
+        );
     }
 
-    // Add Schedule
+    // =========================================================
+    // ADD SCHEDULE
+    // =========================================================
+
     public void addSchedule(Schedule schedule) {
 
-        collection.insertOne(schedule);
+        if (schedule == null) {
+            throw new IllegalArgumentException(
+                    "Schedule cannot be null"
+            );
+        }
 
+        if (schedule.getScheduleId() == null ||
+            schedule.getScheduleId().trim().isEmpty()) {
+
+            throw new IllegalArgumentException(
+                    "Schedule ID is required"
+            );
+        }
+
+        collection.insertOne(schedule);
     }
 
-    // Get All Schedules
+    // =========================================================
+    // GET ALL SCHEDULES
+    // =========================================================
+
     public List<Schedule> getAllSchedules() {
 
-        List<Schedule> scheduleList = new ArrayList<>();
-
-        collection.find().into(scheduleList);
-
-        return scheduleList;
-
+        return collection
+                .find()
+                .into(new ArrayList<>());
     }
 
-    // Get Schedule By Id
+    // =========================================================
+    // GET SCHEDULE BY ID
+    // =========================================================
+
     public Schedule getScheduleById(String scheduleId) {
 
-        return collection.find(eq("scheduleId", scheduleId)).first();
+        if (scheduleId == null ||
+            scheduleId.trim().isEmpty()) {
 
+            return null;
+        }
+
+        return collection
+                .find(eq("_id", scheduleId))
+                .first();
     }
 
-    // Update Schedule
-    public void updateSchedule(Schedule schedule) {
+    // =========================================================
+    // GET SCHEDULES BY ROUTE ID
+    // =========================================================
 
-        collection.replaceOne(eq("scheduleId", schedule.getScheduleId()), schedule);
+    public List<Schedule> getSchedulesByRouteId(
+            String routeId) {
 
+        if (routeId == null ||
+            routeId.trim().isEmpty()) {
+
+            return new ArrayList<>();
+        }
+
+        return collection
+                .find(eq("routeId", routeId))
+                .into(new ArrayList<>());
     }
 
-    // Delete Schedule
-    public void deleteSchedule(String scheduleId) {
+    // =========================================================
+    // UPDATE SCHEDULE
+    // =========================================================
 
-        collection.deleteOne(eq("scheduleId", scheduleId));
+    public boolean updateSchedule(
+            Schedule schedule) {
 
+        if (schedule == null ||
+            schedule.getScheduleId() == null ||
+            schedule.getScheduleId().trim().isEmpty()) {
+
+            return false;
+        }
+
+        return collection
+                .replaceOne(
+                        eq("_id", schedule.getScheduleId()),
+                        schedule
+                )
+                .getMatchedCount() > 0;
     }
 
+    // =========================================================
+    // DELETE SCHEDULE
+    // =========================================================
+
+    public boolean deleteSchedule(
+            String scheduleId) {
+
+        if (scheduleId == null ||
+            scheduleId.trim().isEmpty()) {
+
+            return false;
+        }
+
+        return collection
+                .deleteOne(
+                        eq("_id", scheduleId)
+                )
+                .getDeletedCount() > 0;
+    }
 }

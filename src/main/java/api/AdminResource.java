@@ -1,254 +1,531 @@
 package api;
- 
-import java.util.List;
- 
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
- 
 import model.Bus;
-import model.Stop;
-import model.Route;
-import model.Schedule;
 import model.BusLocation;
- 
+import model.Route;
+import model.RouteStop;
+import model.Schedule;
+import model.Stop;
 import service.AdminService;
- 
 @Path("/admin")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class AdminResource {
- 
     private final AdminService adminService = new AdminService();
- 
-    // ============================
-    // BUS ENDPOINTS
-    // ============================
- 
     @GET
     @Path("/bus")
     public Response getAllBuses() {
-        List<Bus> buses = adminService.getAllBuses();
-        return Response.ok(buses).build();
+        return Response.ok(adminService.getAllBuses()).build();
     }
- 
     @GET
     @Path("/bus/{busId}")
-    public Response getBusById(@PathParam("busId") String busId) {
+    public Response getBusById(
+            @PathParam("busId") String busId) {
         Bus bus = adminService.getBusById(busId);
         if (bus == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity("Bus Not Found")
-                    .build();
+            return Response.status(Response.Status.NOT_FOUND ).entity("Bus Not Found").build();
         }
         return Response.ok(bus).build();
     }
- 
     @POST
     @Path("/bus")
     public Response addBus(Bus bus) {
-        adminService.addBus(bus);
-        return Response.status(Response.Status.CREATED)
-                .entity("Bus Added Successfully")
-                .build();
+        try {
+            adminService.addBus(bus);
+            return Response.status(Response.Status.CREATED ).entity("Bus Added Successfully").build();
+        } catch (IllegalArgumentException e) {
+            return Response.status( Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
     }
- 
     @PUT
     @Path("/bus")
     public Response updateBus(Bus bus) {
-        adminService.updateBus(bus);
-        return Response.ok("Bus Updated Successfully").build();
+        try {
+            adminService.updateBus(bus);
+            return Response.ok(
+                    "Bus Updated Successfully").build();
+        } catch (IllegalArgumentException e) {
+            return Response.status( Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
     }
- 
     @DELETE
     @Path("/bus/{busId}")
-    public Response deleteBus(@PathParam("busId") String busId) {
-        adminService.deleteBus(busId);
-        return Response.ok("Bus Deleted Successfully").build();
+    public Response deleteBus(
+            @PathParam("busId") String busId) {
+        try {
+            adminService.deleteBus(busId);
+            return Response.ok( "Bus Deleted Successfully" ).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status( Response.Status.BAD_REQUEST ).entity(e.getMessage()).build();
+        }
     }
- 
-    // ============================
-    // STOP ENDPOINTS
-    // ============================
- 
     @GET
     @Path("/stop")
     public Response getAllStops() {
-        List<Stop> stops = adminService.getAllStops();
-        return Response.ok(stops).build();
+        return Response.ok(adminService.getAllStops()).build();
     }
- 
+
     @GET
     @Path("/stop/{stopId}")
-    public Response getStopById(@PathParam("stopId") String stopId) {
+    public Response getStopById(
+            @PathParam("stopId") String stopId) {
+
         Stop stop = adminService.getStopById(stopId);
+
         if (stop == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity("Stop Not Found")
-                    .build();
+
+            return Response.status(
+                    Response.Status.NOT_FOUND
+            ).entity("Stop Not Found").build();
         }
+
         return Response.ok(stop).build();
     }
- 
+
     @POST
     @Path("/stop")
     public Response addStop(Stop stop) {
-        adminService.addStop(stop);
-        return Response.status(Response.Status.CREATED)
-                .entity("Stop Added Successfully")
-                .build();
+
+        try {
+
+            adminService.addStop(stop);
+
+            return Response.status(
+                    Response.Status.CREATED
+            ).entity("Stop Added Successfully").build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
     }
- 
+
     @PUT
     @Path("/stop")
     public Response updateStop(Stop stop) {
-        adminService.updateStop(stop);
-        return Response.ok("Stop Updated Successfully").build();
+
+        try {
+
+            adminService.updateStop(stop);
+
+            return Response.ok(
+                    "Stop Updated Successfully"
+            ).build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
     }
- 
+
     @DELETE
     @Path("/stop/{stopId}")
-    public Response deleteStop(@PathParam("stopId") String stopId) {
-        adminService.deleteStop(stopId);
-        return Response.ok("Stop Deleted Successfully").build();
+    public Response deleteStop(
+            @PathParam("stopId") String stopId) {
+
+        try {
+
+            adminService.deleteStop(stopId);
+
+            return Response.ok(
+                    "Stop Deleted Successfully"
+            ).build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
     }
- 
-    // ============================
-    // ROUTE ENDPOINTS
-    // ============================
- 
+
+
+    // =========================================================
+    // ROUTE
+    // =========================================================
+
     @GET
     @Path("/route")
     public Response getAllRoutes() {
-        List<Route> routes = adminService.getAllRoutes();
-        return Response.ok(routes).build();
+
+        return Response.ok(
+                adminService.getAllRoutes()
+        ).build();
     }
- 
+
     @GET
     @Path("/route/{routeId}")
-    public Response getRouteById(@PathParam("routeId") String routeId) {
+    public Response getRouteById(
+            @PathParam("routeId") String routeId) {
+
         Route route = adminService.getRouteById(routeId);
+
         if (route == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity("Route Not Found")
-                    .build();
+
+            return Response.status(
+                    Response.Status.NOT_FOUND
+            ).entity("Route Not Found").build();
         }
+
         return Response.ok(route).build();
     }
- 
+
     @POST
     @Path("/route")
     public Response addRoute(Route route) {
-        adminService.addRoute(route);
-        return Response.status(Response.Status.CREATED)
-                .entity("Route Added Successfully")
-                .build();
+
+        try {
+
+            adminService.addRoute(route);
+
+            return Response.status(
+                    Response.Status.CREATED
+            ).entity("Route Added Successfully").build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
     }
- 
+
     @PUT
     @Path("/route")
     public Response updateRoute(Route route) {
-        adminService.updateRoute(route);
-        return Response.ok("Route Updated Successfully").build();
+
+        try {
+
+            adminService.updateRoute(route);
+
+            return Response.ok(
+                    "Route Updated Successfully"
+            ).build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
     }
- 
+
     @DELETE
     @Path("/route/{routeId}")
-    public Response deleteRoute(@PathParam("routeId") String routeId) {
-        adminService.deleteRoute(routeId);
-        return Response.ok("Route Deleted Successfully").build();
+    public Response deleteRoute(
+            @PathParam("routeId") String routeId) {
+
+        try {
+
+            adminService.deleteRoute(routeId);
+
+            return Response.ok(
+                    "Route Deleted Successfully"
+            ).build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
     }
- 
-    // ============================
-    // SCHEDULE ENDPOINTS
-    // ============================
- 
+
+
+    // =========================================================
+    // ROUTE STOP
+    // =========================================================
+
+    @GET
+    @Path("/route-stop")
+    public Response getAllRouteStops() {
+
+        return Response.ok(
+                adminService.getAllRouteStops()
+        ).build();
+    }
+
+    @GET
+    @Path("/route-stop/{routeId}")
+    public Response getRouteStopsByRouteId(
+            @PathParam("routeId") String routeId) {
+
+        return Response.ok(
+                adminService.getRouteStopsByRouteId(routeId)
+        ).build();
+    }
+
+    @POST
+    @Path("/route-stop")
+    public Response addRouteStop(
+            RouteStop routeStop) {
+
+        try {
+
+            adminService.addRouteStop(routeStop);
+
+            return Response.status(
+                    Response.Status.CREATED
+            ).entity(
+                    "Route Stop Added Successfully"
+            ).build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
+    }
+
+    @PUT
+    @Path("/route-stop")
+    public Response updateRouteStop(
+            RouteStop routeStop) {
+
+        try {
+
+            adminService.updateRouteStop(routeStop);
+
+            return Response.ok(
+                    "Route Stop Updated Successfully"
+            ).build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
+    }
+
+    @DELETE
+    @Path("/route-stop/{routeId}")
+    public Response deleteRouteStops(
+            @PathParam("routeId") String routeId) {
+
+        try {
+
+            adminService.deleteRouteStopsByRouteId(routeId);
+
+            return Response.ok(
+                    "Route Stops Deleted Successfully"
+            ).build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
+    }
+
+
+    // =========================================================
+    // SCHEDULE
+    // =========================================================
+
     @GET
     @Path("/schedule")
     public Response getAllSchedules() {
-        List<Schedule> schedules = adminService.getAllSchedules();
-        return Response.ok(schedules).build();
+
+        return Response.ok(
+                adminService.getAllSchedules()
+        ).build();
     }
- 
+
     @GET
     @Path("/schedule/{scheduleId}")
-    public Response getScheduleById(@PathParam("scheduleId") String scheduleId) {
-        Schedule schedule = adminService.getScheduleById(scheduleId);
+    public Response getScheduleById(
+            @PathParam("scheduleId") String scheduleId) {
+
+        Schedule schedule =
+                adminService.getScheduleById(scheduleId);
+
         if (schedule == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity("Schedule Not Found")
-                    .build();
+
+            return Response.status(
+                    Response.Status.NOT_FOUND
+            ).entity("Schedule Not Found").build();
         }
+
         return Response.ok(schedule).build();
     }
- 
+
     @POST
     @Path("/schedule")
-    public Response addSchedule(Schedule schedule) {
-        adminService.addSchedule(schedule);
-        return Response.status(Response.Status.CREATED)
-                .entity("Schedule Added Successfully")
-                .build();
+    public Response addSchedule(
+            Schedule schedule) {
+
+        try {
+
+            adminService.addSchedule(schedule);
+
+            return Response.status(
+                    Response.Status.CREATED
+            ).entity(
+                    "Schedule Added Successfully"
+            ).build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
     }
- 
+
     @PUT
     @Path("/schedule")
-    public Response updateSchedule(Schedule schedule) {
-        adminService.updateSchedule(schedule);
-        return Response.ok("Schedule Updated Successfully").build();
+    public Response updateSchedule(
+            Schedule schedule) {
+
+        try {
+
+            adminService.updateSchedule(schedule);
+
+            return Response.ok(
+                    "Schedule Updated Successfully"
+            ).build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
     }
- 
+
     @DELETE
     @Path("/schedule/{scheduleId}")
-    public Response deleteSchedule(@PathParam("scheduleId") String scheduleId) {
-        adminService.deleteSchedule(scheduleId);
-        return Response.ok("Schedule Deleted Successfully").build();
+    public Response deleteSchedule(
+            @PathParam("scheduleId") String scheduleId) {
+
+        try {
+
+            adminService.deleteSchedule(scheduleId);
+
+            return Response.ok(
+                    "Schedule Deleted Successfully"
+            ).build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
     }
- 
-    // ============================
-    // BUS LOCATION ENDPOINTS
-    // ============================
- 
+
+
+    // =========================================================
+    // BUS LOCATION
+    // =========================================================
+
     @GET
     @Path("/location")
     public Response getAllBusLocations() {
-        List<BusLocation> locations = adminService.getAllBusLocations();
-        return Response.ok(locations).build();
+
+        return Response.ok(
+                adminService.getAllBusLocations()
+        ).build();
     }
- 
+
     @GET
     @Path("/location/{busId}")
-    public Response getBusLocationByBusId(@PathParam("busId") String busId) {
-        BusLocation location = adminService.getBusLocationByBusId(busId);
+    public Response getBusLocationByBusId(
+            @PathParam("busId") String busId) {
+
+        BusLocation location =
+                adminService.getBusLocationByBusId(busId);
+
         if (location == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity("Bus Location Not Found")
-                    .build();
+
+            return Response.status(
+                    Response.Status.NOT_FOUND
+            ).entity(
+                    "Bus Location Not Found"
+            ).build();
         }
+
         return Response.ok(location).build();
     }
- 
+
     @POST
     @Path("/location")
-    public Response addBusLocation(BusLocation location) {
-        adminService.addBusLocation(location);
-        return Response.status(Response.Status.CREATED)
-                .entity("Bus Location Saved Successfully")
-                .build();
+    public Response addBusLocation(
+            BusLocation location) {
+
+        try {
+
+            adminService.addBusLocation(location);
+
+            return Response.status(
+                    Response.Status.CREATED
+            ).entity(
+                    "Bus Location Added Successfully"
+            ).build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
     }
- 
+
     @PUT
     @Path("/location")
-    public Response updateBusLocation(BusLocation location) {
-        adminService.updateBusLocation(location);
-        return Response.ok("Bus Location Updated Successfully").build();
+    public Response updateBusLocation(
+            BusLocation location) {
+
+        try {
+
+            adminService.updateBusLocation(location);
+
+            return Response.ok(
+                    "Bus Location Updated Successfully"
+            ).build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
     }
- 
+
     @DELETE
     @Path("/location/{busId}")
-    public Response deleteBusLocation(@PathParam("busId") String busId) {
-        adminService.deleteBusLocation(busId);
-        return Response.ok("Bus Location Deleted Successfully").build();
+    public Response deleteBusLocation(
+            @PathParam("busId") String busId) {
+
+        try {
+
+            adminService.deleteBusLocation(busId);
+
+            return Response.ok(
+                    "Bus Location Deleted Successfully"
+            ).build();
+
+        } catch (IllegalArgumentException e) {
+
+            return Response.status(
+                    Response.Status.BAD_REQUEST
+            ).entity(e.getMessage()).build();
+        }
     }
 }
- 

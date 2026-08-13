@@ -1,68 +1,177 @@
+
+/* =========================================================
+   GLOBAL RESET
+========================================================= */
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: Arial, Helvetica, sans-serif;
 }
 
+
+/* =========================================================
+   BODY
+========================================================= */
+
 body {
-    background: #f4f6f9;
-    padding: 20px;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f7fb;
+    color: #1f2937;
+    min-height: 100vh;
 }
+
+
+/* =========================================================
+   MAIN CONTAINER
+========================================================= */
 
 .container {
     width: 95%;
-    margin: auto;
+    max-width: 1500px;
+    margin: 30px auto;
 }
 
-h1 {
+
+/* =========================================================
+   TITLE
+========================================================= */
+
+.container > h1 {
     text-align: center;
-    margin-bottom: 20px;
-    color: #2c3e50;
+    font-size: 30px;
+    margin-bottom: 25px;
+    color: #173b67;
+    font-weight: 700;
 }
+
+
+/* =========================================================
+   MESSAGE
+========================================================= */
+
+.message {
+    display: none;
+    padding: 13px 18px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.message.success {
+    display: block;
+    background: #ecfdf3;
+    color: #027a48;
+    border: 1px solid #abefc6;
+}
+
+.message.error {
+    display: block;
+    background: #fef3f2;
+    color: #b42318;
+    border: 1px solid #fecdca;
+}
+
+
+/* =========================================================
+   TABS
+========================================================= */
 
 .tabs {
     display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
+    justify-content: center;
+    gap: 8px;
+    background: #ffffff;
+    padding: 10px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+    margin-bottom: 25px;
+    overflow-x: auto;
 }
 
 .tabButton {
-    padding: 12px 25px;
     border: none;
-    background: #3498db;
-    color: white;
+    background: transparent;
+    color: #52606d;
+    padding: 13px 25px;
+    border-radius: 8px;
     cursor: pointer;
-    border-radius: 5px;
     font-size: 15px;
-    transition: background 0.2s ease;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    white-space: nowrap;
 }
 
 .tabButton:hover {
-    background: #2980b9;
+    background: #edf4ff;
+    color: #1769aa;
 }
 
 .tabButton.active {
-    background: #2c3e50;
+    background: #1769aa;
+    color: white;
+    box-shadow: 0 3px 8px rgba(23, 105, 170, 0.25);
 }
 
+
+/* =========================================================
+   TAB CONTENT
+========================================================= */
+
+.tabContent {
+    animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+}
+
+
+/* =========================================================
+   CARD
+========================================================= */
+
 .card {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    margin-bottom: 20px;
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+    border: 1px solid #e8edf3;
 }
 
 .card h2 {
-    margin-bottom: 20px;
-    color: #34495e;
+    color: #173b67;
+    font-size: 22px;
+    margin-bottom: 22px;
 }
+
+.card h3 {
+    color: #234f7d;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+
+/* =========================================================
+   FORM GRID
+========================================================= */
 
 .formGrid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
+    gap: 20px 25px;
 }
 
 .formGroup {
@@ -71,114 +180,425 @@ h1 {
 }
 
 .formGroup.fullWidth {
-    grid-column: span 2;
+    grid-column: 1 / -1;
 }
+
+
+/* =========================================================
+   LABEL
+========================================================= */
 
 .formGroup label {
-    margin-bottom: 6px;
-    font-weight: bold;
-    color: #2c3e50;
+    font-size: 14px;
+    font-weight: 600;
+    color: #344054;
+    margin-bottom: 8px;
 }
 
-.formGroup input,
-.formGroup select {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+
+/* =========================================================
+   INPUT / SELECT
+========================================================= */
+
+input,
+select {
+    width: 100%;
+    height: 44px;
+    padding: 10px 13px;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #1d2939;
     font-size: 14px;
     outline: none;
-    transition: border-color 0.2s;
+    transition: 0.2s ease;
 }
 
-.formGroup input:focus,
-.formGroup select:focus {
-    border-color: #3498db;
+input::placeholder {
+    color: #98a2b3;
 }
 
-/* Checkbox Grid for Operating Days */
-.daysCheckboxGroup {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background: #fafafa;
+input:focus,
+select:focus {
+    border-color: #1769aa;
+    box-shadow: 0 0 0 3px rgba(23, 105, 170, 0.12);
 }
 
-.dayCheckboxLabel {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 14px;
-    font-weight: normal;
-    cursor: pointer;
+input[readonly] {
+    background: #f2f4f7;
+    color: #667085;
+    cursor: not-allowed;
 }
 
-.dayCheckboxLabel input[type="checkbox"] {
-    cursor: pointer;
-    transform: scale(1.1);
+
+/* =========================================================
+   BUTTON GROUP
+========================================================= */
+
+.buttonGroup {
+    margin-top: 25px;
 }
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
 
 button {
-    padding: 10px 18px;
-    border: none;
-    color: white;
-    cursor: pointer;
-    border-radius: 5px;
-    margin-right: 10px;
-    margin-top: 10px;
-    font-weight: bold;
-    transition: background 0.2s ease;
+    font-family: inherit;
 }
 
-.btnAdd { background: #27ae60; }
-.btnUpdate { background: #f39c12; }
-.btnDelete { background: #e74c3c; }
-.btnClear { background: #7f8c8d; }
+.btnAdd,
+.btnUpdate,
+.btnDelete,
+.btnClear {
+    border: none;
+    border-radius: 8px;
+    padding: 11px 20px;
+    margin-right: 8px;
+    margin-bottom: 5px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
 
-.btnAdd:hover { background: #229954; }
-.btnUpdate:hover { background: #d68910; }
-.btnDelete:hover { background: #c0392b; }
-.btnClear:hover { background: #616a6b; }
+.btnAdd {
+    background: #16855b;
+    color: white;
+}
+
+.btnAdd:hover {
+    background: #116b49;
+    transform: translateY(-1px);
+}
+
+.btnUpdate {
+    background: #1769aa;
+    color: white;
+}
+
+.btnUpdate:hover {
+    background: #12578e;
+    transform: translateY(-1px);
+}
+
+.btnDelete {
+    background: #d92d20;
+    color: white;
+}
+
+.btnDelete:hover {
+    background: #b42318;
+    transform: translateY(-1px);
+}
+
+.btnClear {
+    background: #667085;
+    color: white;
+}
+
+.btnClear:hover {
+    background: #475467;
+    transform: translateY(-1px);
+}
+
+.smallButton {
+    margin-top: 12px;
+}
+
+
+/* =========================================================
+   INFO BOX
+========================================================= */
+
+.infoBox {
+    background: #eff8ff;
+    border: 1px solid #b2ddff;
+    color: #175cd3;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 22px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   GENERATED ID
+========================================================= */
+
+.generatedIdBox {
+    margin-top: 20px;
+    padding: 13px 16px;
+    border-radius: 8px;
+    background: #f9fafb;
+    border: 1px dashed #98a2b3;
+    color: #475467;
+    font-size: 14px;
+}
+
+.generatedIdBox strong {
+    color: #1769aa;
+    margin-left: 8px;
+}
+
+
+/* =========================================================
+   SELECTED ROUTE
+========================================================= */
+
+.selectedRouteTitle {
+    background: #f2f4f7;
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    color: #475467;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   TABLE CONTAINER
+========================================================= */
+
+.tableContainer {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #eaecf0;
+    border-radius: 10px;
+}
+
+
+/* =========================================================
+   TABLE
+========================================================= */
 
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 15px;
+    min-width: 800px;
+    background: white;
 }
 
-table th {
-    background: #3498db;
+thead {
+    background: #173b67;
     color: white;
-    padding: 12px;
-    text-align: center;
 }
 
-table td {
-    border: 1px solid #ddd;
-    padding: 10px;
-    text-align: center;
+th {
+    padding: 14px 12px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+td {
+    padding: 13px 12px;
+    border-bottom: 1px solid #eaecf0;
+    font-size: 14px;
+    color: #344054;
     vertical-align: middle;
 }
 
-table tr:nth-child(even) { background: #f8f9fa; }
-table tr:hover { background: #ecf0f1; }
-
-#routeStopsTable input[type="number"] {
-    width: 70px;
-    padding: 5px;
-    text-align: center;
+tbody tr {
+    transition: background 0.15s ease;
 }
 
-#routeStopsTable input[type="checkbox"] {
-    transform: scale(1.2);
+tbody tr:hover {
+    background: #f7faff;
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+
+/* =========================================================
+   TABLE BUTTONS
+========================================================= */
+
+td .btnUpdate,
+td .btnDelete {
+    padding: 7px 12px;
+    margin: 2px;
+    font-size: 12px;
+}
+
+.actionButtons {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+
+/* =========================================================
+   TIME ROW
+========================================================= */
+
+.timeRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.timeRow input[type="time"] {
+    max-width: 220px;
+}
+
+.timeRow .btnDelete {
+    margin: 0;
+    padding: 9px 15px;
+}
+
+
+/* =========================================================
+   OPERATING DAYS
+========================================================= */
+
+.daysCheckboxGroup {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.dayCheckboxLabel {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 7px;
+    background: #f2f4f7;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    padding: 9px 13px;
     cursor: pointer;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    margin: 0 !important;
+    transition: 0.2s ease;
 }
 
-@media (max-width: 768px) {
-    .formGrid { grid-template-columns: 1fr; }
-    .formGroup.fullWidth { grid-column: span 1; }
-    .tabs { flex-direction: column; }
-    table { display: block; overflow-x: auto; }
+.dayCheckboxLabel:hover {
+    background: #edf4ff;
+    border-color: #1769aa;
 }
+
+.dayCheckboxLabel input {
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+    accent-color: #1769aa;
+}
+
+
+/* =========================================================
+   EMPTY TABLE
+========================================================= */
+
+.emptyRow td {
+    text-align: center;
+    padding: 30px;
+    color: #98a2b3;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+.tableContainer::-webkit-scrollbar {
+    height: 7px;
+}
+
+.tableContainer::-webkit-scrollbar-track {
+    background: #f2f4f7;
+}
+
+.tableContainer::-webkit-scrollbar-thumb {
+    background: #98a2b3;
+    border-radius: 10px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
+
+    .container {
+        width: 94%;
+        margin: 20px auto;
+    }
+
+    .formGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .formGroup.fullWidth {
+        grid-column: auto;
+    }
+
+    .tabs {
+        justify-content: flex-start;
+    }
+
+    .container > h1 {
+        font-size: 24px;
+    }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+    .container {
+        width: 96%;
+    }
+
+    .card {
+        padding: 18px;
+        border-radius: 10px;
+    }
+
+    .card h2 {
+        font-size: 19px;
+    }
+
+    .btnAdd,
+    .btnUpdate,
+    .btnDelete,
+    .btnClear {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 8px;
+    }
+
+    .timeRow {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .timeRow input[type="time"] {
+        max-width: 100%;
+    }
+
+    .timeRow .btnDelete {
+        width: 100%;
+    }
+
+    .daysCheckboxGroup {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+}
+

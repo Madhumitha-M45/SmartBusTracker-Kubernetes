@@ -8,11 +8,7 @@ import org.bson.codecs.pojo.annotations.BsonProperty;
 public class Schedule {
 
     @BsonId
-    @BsonProperty("scheduleId")
     private String scheduleId;
-
-    @BsonProperty("busId")
-    private String busId;
 
     @BsonProperty("routeId")
     private String routeId;
@@ -23,36 +19,27 @@ public class Schedule {
     @BsonProperty("destinationName")
     private String destinationName;
 
-    @BsonProperty("departureTime")
-    private String departureTime;
+    @BsonProperty("departureTimes")
+    private List<String> departureTimes;
 
-    @BsonProperty("arrivalTime")
-    private String arrivalTime;
+    @BsonProperty("arrivalTimes")
+    private List<String> arrivalTimes;
 
     @BsonProperty("operatingDays")
     private List<String> operatingDays;
 
+
+    // =========================
+    // DEFAULT CONSTRUCTOR
+    // =========================
+
     public Schedule() {
     }
 
-    public Schedule(String scheduleId,
-                    String busId,
-                    String routeId,
-                    String sourceName,
-                    String destinationName,
-                    String departureTime,
-                    String arrivalTime,
-                    List<String> operatingDays) {
 
-        this.scheduleId = scheduleId;
-        this.busId = busId;
-        this.routeId = routeId;
-        this.sourceName = sourceName;
-        this.destinationName = destinationName;
-        this.departureTime = departureTime;
-        this.arrivalTime = arrivalTime;
-        this.operatingDays = operatingDays;
-    }
+    // =========================
+    // SCHEDULE ID
+    // =========================
 
     public String getScheduleId() {
         return scheduleId;
@@ -62,13 +49,10 @@ public class Schedule {
         this.scheduleId = scheduleId;
     }
 
-    public String getBusId() {
-        return busId;
-    }
 
-    public void setBusId(String busId) {
-        this.busId = busId;
-    }
+    // =========================
+    // ROUTE ID
+    // =========================
 
     public String getRouteId() {
         return routeId;
@@ -78,6 +62,11 @@ public class Schedule {
         this.routeId = routeId;
     }
 
+
+    // =========================
+    // SOURCE NAME
+    // =========================
+
     public String getSourceName() {
         return sourceName;
     }
@@ -85,6 +74,11 @@ public class Schedule {
     public void setSourceName(String sourceName) {
         this.sourceName = sourceName;
     }
+
+
+    // =========================
+    // DESTINATION NAME
+    // =========================
 
     public String getDestinationName() {
         return destinationName;
@@ -94,21 +88,36 @@ public class Schedule {
         this.destinationName = destinationName;
     }
 
-    public String getDepartureTime() {
-        return departureTime;
+
+    // =========================
+    // DEPARTURE TIMES
+    // =========================
+
+    public List<String> getDepartureTimes() {
+        return departureTimes;
     }
 
-    public void setDepartureTime(String departureTime) {
-        this.departureTime = departureTime;
+    public void setDepartureTimes(List<String> departureTimes) {
+        this.departureTimes = departureTimes;
     }
 
-    public String getArrivalTime() {
-        return arrivalTime;
+
+    // =========================
+    // ARRIVAL TIMES
+    // =========================
+
+    public List<String> getArrivalTimes() {
+        return arrivalTimes;
     }
 
-    public void setArrivalTime(String arrivalTime) {
-        this.arrivalTime = arrivalTime;
+    public void setArrivalTimes(List<String> arrivalTimes) {
+        this.arrivalTimes = arrivalTimes;
     }
+
+
+    // =========================
+    // OPERATING DAYS
+    // =========================
 
     public List<String> getOperatingDays() {
         return operatingDays;

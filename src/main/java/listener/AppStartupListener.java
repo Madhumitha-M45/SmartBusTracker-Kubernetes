@@ -1,45 +1,140 @@
 package listener;
-
+ 
 import jakarta.servlet.ServletContextEvent;
+
 import jakarta.servlet.ServletContextListener;
+
 import jakarta.servlet.annotation.WebListener;
+ 
+import model.Bus;
+
+import model.BusLocation;
+
+import model.Route;
+
+import model.Schedule;
+
+import model.Trip;
+ 
+import repository.BusRepository;
 
 import repository.RouteRepository;
+
 import repository.ScheduleRepository;
-import service.AdminService;
+ 
+import simulator.BusAssignmentManager;
+
 import simulator.ScheduleManager;
 
+import simulator.SimulationManager;
+ 
+import java.util.List;
+
+import java.util.Map;
+
+import java.util.stream.Collectors;
+ 
 @WebListener
+
 public class AppStartupListener implements ServletContextListener {
-
-    private Thread scheduleManagerThread;
-
+ 
+    private SimulationManager simulationManager;
+ 
     @Override
-    public void contextInitialized(ServletContextEvent sce) {
 
-        System.out.println("[LISTENER] Starting Bus Simulator...");
+    public void contextInitialized(ServletContextEvent sce) {
+ 
+        System.out.println("[LISTENER] Initializing Bus Simulator Systems...");
+ 
+        BusRepository busRepository = new BusRepository();
+
+        RouteRepository routeRepository = new RouteRepository();
 
         ScheduleRepository scheduleRepository = new ScheduleRepository();
-        RouteRepository routeRepository = new RouteRepository();
-        AdminService adminService = new AdminService();
+ 
+        List<Bus> busInventory = busRepository.getAllBuses();
 
-        ScheduleManager scheduleManager =
-                new ScheduleManager(scheduleRepository, routeRepository, adminService);
+        List<Schedule> schedules = scheduleRepository.getAllSchedules();
 
-        scheduleManagerThread = new Thread(scheduleManager, "ScheduleManager-Thread");
-        scheduleManagerThread.setDaemon(true);
-        scheduleManagerThread.start();
+        List<Route> routes = routeRepository.getAllRoutes();
+ 
+        // Safe Stream Mapping: Filters null/empty routeIds and handles duplicates gracefully
 
-        System.out.println("[LISTENER] ScheduleManager started.");
+        Map<String, Route> routeMap = routes.stream()
+
+                .filter(route -> route != null && route.getRouteId() != null && !route.getRouteId().trim().isEmpty())
+
+                .collect(Collectors.toMap(
+
+                        Route::getRouteId,
+
+                        route -> route,
+
+                        (existing, replacement) -> existing // Keeps the first entry if duplicate routeIds are found
+
+                ));
+ 
+        BusAssignmentManager assignmentManager = new BusAssignmentManager(busInventory);
+
+        ScheduleManager scheduleManager = new ScheduleManager(assignmentManager);
+
+        scheduleManager.initializeSchedules(schedules, routeMap);
+ 
+        simulationManager = new SimulationManager(scheduleManager, routeMap, busInventory);
+ 
+        // Register listener implementation
+
+        simulationManager.addListener(new BusSimulationListener() {
+ 
+            @Override
+
+            public void onBusLocationUpdated(BusLocation busLocation) {
+
+                // Live location updates logic
+
+            }
+ 
+            @Override
+
+            public void onTripStatusChanged(Trip trip) {
+
+                // Trip status change logic
+
+            }
+ 
+            @Override
+
+            public void onBusAssigned(Trip trip, String busId) {
+
+                // Bus assignment logic
+
+            }
+
+        });
+ 
+        sce.getServletContext().setAttribute("simulationManager", simulationManager);
+
+        simulationManager.startSimulation();
+ 
+        System.out.println("[LISTENER] Single-threaded SimulationManager started successfully.");
+
     }
-
+ 
     @Override
+
     public void contextDestroyed(ServletContextEvent sce) {
-
+ 
         System.out.println("[LISTENER] Stopping Bus Simulator...");
+ 
+        if (simulationManager != null) {
 
-        if (scheduleManagerThread != null && scheduleManagerThread.isAlive()) {
-            scheduleManagerThread.interrupt();
+            simulationManager.stopSimulation();
+
         }
+ 
+        System.out.println("[LISTENER] SimulationManager shut down cleanly.");
+
     }
+
 }
+ 

@@ -13,20 +13,22 @@ import model.Bus;
 
 public class BusRepository {
 
-    private MongoCollection<Bus> collection;
+    private final MongoCollection<Bus> collection;
 
     public BusRepository() {
 
         MongoDatabase database = MongoDBConfig.getDatabase();
-        collection = database.getCollection("Bus", Bus.class);
+
+        collection = database.getCollection("buses", Bus.class);
     }
 
-    // Add Bus
+    // ADD BUS
     public void addBus(Bus bus) {
+
         collection.insertOne(bus);
     }
 
-    // Get All Buses
+    // GET ALL BUSES
     public List<Bus> getAllBuses() {
 
         List<Bus> busList = new ArrayList<>();
@@ -36,25 +38,28 @@ public class BusRepository {
         return busList;
     }
 
-    // Get Bus By Id
+    // GET BUS BY ID
     public Bus getBusById(String busId) {
 
-        return collection.find(eq("busId", busId)).first();
-
+        return collection.find(
+                eq("_id", busId)
+        ).first();
     }
 
-    // Update Bus
-    public void updateBus(Bus bus) {
+    // UPDATE BUS
+    public boolean updateBus(Bus bus) {
 
-        collection.replaceOne(eq("busId", bus.getBusId()), bus);
-
+        return collection.replaceOne(
+                eq("_id", bus.getBusId()),
+                bus
+        ).getModifiedCount() > 0;
     }
 
-    // Delete Bus
-    public void deleteBus(String busId) {
+    // DELETE BUS
+    public boolean deleteBus(String busId) {
 
-        collection.deleteOne(eq("busId", busId));
-
+        return collection.deleteOne(
+                eq("_id", busId)
+        ).getDeletedCount() > 0;
     }
-
 }

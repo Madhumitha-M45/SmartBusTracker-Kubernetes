@@ -1,820 +1,3180 @@
-const API = `${window.location.origin}/BusTracker/api/admin`;
+/* =========================================================
+   API
+========================================================= */
 
-/* ===========================
-   HELPER FUNCTIONS
-=========================== */
+const API =
+    `${window.location.origin}/BusTracker/api/admin`;
 
-const getVal = (id) => {
-  const el = document.getElementById(id);
-  return el ? el.value.trim() : "";
-};
 
-const setVal = (id, val) => {
-  const el = document.getElementById(id);
-  if (el) el.value = val ?? "";
-};
+/* =========================================================
+   GLOBAL DATA
+========================================================= */
 
-const populateDropdown = (elementId, items, valueKey, labelKey, defaultText) => {
-  const select = document.getElementById(elementId);
-  if (!select) return;
+let allBuses = [];
+let allStops = [];
+let allRoutes = [];
+let allRouteStops = [];
+let allSchedules = [];
 
-  const options = items
-    .map((item) => `<option value="${item[valueKey]}">${typeof labelKey === "function" ? labelKey(item) : item[labelKey]}</option>`)
-    .join("");
 
-  select.innerHTML = `<option value="">${defaultText}</option>${options}`;
-};
+/* =========================================================
+   HELPERS
+========================================================= */
 
-/* ===========================
-   TAB NAVIGATION
-=========================== */
+function getVal(id) {
 
-function showTab(tabId, evt) {
-  document.querySelectorAll(".tabContent").forEach((tab) => {
-    tab.style.display = "none";
-  });
+    const el = document.getElementById(id);
 
-  document.querySelectorAll(".tabButton").forEach((btn) => {
-    btn.classList.remove("active");
-  });
-
-  const targetTab = document.getElementById(tabId);
-  if (targetTab) targetTab.style.display = "block";
-
-  if (evt?.currentTarget) {
-    evt.currentTarget.classList.add("active");
-  }
-
-  switch (tabId) {
-    case "bus":
-      loadBus();
-      loadRouteDropdownForBus();
-      break;
-    case "stop":
-      loadStop();
-      break;
-    case "route":
-      loadRoute();
-      loadStopsForRoute();
-      break;
-    case "schedule":
-      loadSchedule();
-      loadBusDropdown();
-      loadRouteDropdown();
-      break;
-  }
+    return el ? el.value.trim() : "";
 }
 
-/* ===========================
-   BUS CRUD
-=========================== */
 
-async function loadBus() {
-  try {
-    const res = await fetch(`${API}/bus`);
-    if (!res.ok) throw new Error("Failed to load buses");
+function setVal(id, value) {
 
-    const data = await res.json();
-    const body = document.getElementById("busTableBody");
-    if (!body) return;
+    const el = document.getElementById(id);
 
-    body.innerHTML = data
-      .map((bus) => {
-        const rId = bus.routeId || "";
-        return `
-<tr>
-  <td>${bus.busId}</td>
-  <td>${bus.busNumber}</td>
-  <td>${bus.busName}</td>
-  <td>${bus.busType}</td>
-  <td>${rId}</td>
-  <td>
-    <button class="btnUpdate" onclick="editBus('${bus.busId}', '${bus.busNumber}', '${bus.busName}', '${bus.busType}', '${rId}')">Edit</button>
-  </td>
-</tr>`;
-      })
-      .join("");
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-async function loadRouteDropdownForBus() {
-  try {
-    const res = await fetch(`${API}/route`);
-    const data = await res.json();
-    populateDropdown("routeId", data, "routeId", "routeName", "-- Select Route --");
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-async function addBus() {
-  const bus = {
-    busId: getVal("busId"),
-    busNumber: getVal("busNumber"),
-    busName: getVal("busName"),
-    busType: getVal("busType"),
-    routeId: getVal("routeId")
-  };
-
-  try {
-    const res = await fetch(`${API}/bus`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bus)
-    });
-    if (!res.ok) throw new Error("Failed to add bus");
-
-    alert("Bus Added Successfully");
-    clearBus();
-    loadBus();
-  } catch (err) {
-    alert(`Error: ${err.message}`);
-  }
-}
-
-function editBus(id, number, name, type, route) {
-  setVal("busId", id);
-  setVal("busNumber", number);
-  setVal("busName", name);
-  setVal("busType", type);
-  setVal("routeId", route);
-}
-
-async function updateBus() {
-  const bus = {
-    busId: getVal("busId"),
-    busNumber: getVal("busNumber"),
-    busName: getVal("busName"),
-    busType: getVal("busType"),
-    routeId: getVal("routeId")
-  };
-
-  try {
-    const res = await fetch(`${API}/bus`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bus)
-    });
-
-    if (!res.ok) throw new Error("Failed to update bus");
-
-    alert("Bus Updated Successfully");
-    clearBus();
-    loadBus();
-  } catch (err) {
-    alert(`Error: ${err.message}`);
-  }
-}
-
-async function deleteBus() {
-  const id = getVal("busId");
-  if (!id) return alert("Please specify a Bus ID to delete.");
-
-  try {
-    const res = await fetch(`${API}/bus/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to delete bus");
-
-    alert("Bus Deleted Successfully");
-    clearBus();
-    loadBus();
-  } catch (err) {
-    alert(`Error: ${err.message}`);
-  }
-}
-
-function clearBus() {
-  setVal("busId", "");
-  setVal("busNumber", "");
-  setVal("busName", "");
-  const busType = document.getElementById("busType");
-  if (busType) busType.selectedIndex = 0;
-
-  const routeId = document.getElementById("routeId");
-  if (routeId) routeId.selectedIndex = 0;
-}
-
-/* ===========================
-   STOP CRUD
-=========================== */
-
-async function loadStop() {
-  try {
-    const res = await fetch(`${API}/stop`);
-    const data = await res.json();
-    const body = document.getElementById("stopTableBody");
-    if (!body) return;
-
-    body.innerHTML = data
-      .map(
-        (stop) => `
-<tr>
-  <td>${stop.stopId}</td>
-  <td>${stop.stopName}</td>
-  <td>
-    <button class="btnUpdate" onclick="editStop('${stop.stopId}', '${stop.stopName}')">Edit</button>
-  </td>
-</tr>`
-      )
-      .join("");
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-async function addStop() {
-  const stop = {
-    stopId: getVal("stopId"),
-    stopName: getVal("stopName")
-  };
-
-  try {
-    const res = await fetch(`${API}/stop`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(stop)
-    });
-    if (!res.ok) throw new Error("Failed to add stop");
-
-    alert("Stop Added Successfully");
-    clearStop();
-    loadStop();
-  } catch (err) {
-    alert(`Error: ${err.message}`);
-  }
-}
-
-function editStop(id, name) {
-  setVal("stopId", id);
-  setVal("stopName", name);
-}
-
-async function updateStop() {
-  const stop = {
-    stopId: getVal("stopId"),
-    stopName: getVal("stopName")
-  };
-
-  try {
-    const res = await fetch(`${API}/stop`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(stop)
-    });
-
-    if (!res.ok) throw new Error("Failed to update stop");
-
-    alert("Stop Updated Successfully");
-    clearStop();
-    loadStop();
-  } catch (err) {
-    alert(`Error: ${err.message}`);
-  }
-}
-
-async function deleteStop() {
-  const id = getVal("stopId");
-  if (!id) return alert("Please specify a Stop ID to delete.");
-
-  try {
-    const res = await fetch(`${API}/stop/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to delete stop");
-
-    alert("Stop Deleted Successfully");
-    clearStop();
-    loadStop();
-  } catch (err) {
-    alert(`Error: ${err.message}`);
-  }
-}
-
-function clearStop() {
-  setVal("stopId", "");
-  setVal("stopName", "");
-}
-
-/* ===========================
-   ROUTE CRUD
-=========================== */
-
-async function loadRoute() {
-  try {
-    const res = await fetch(`${API}/route`);
-    if (!res.ok) throw new Error("Failed to load routes");
-
-    const data = await res.json();
-    const body = document.getElementById("routeTableBody");
-    body.innerHTML = "";
-
-    data.forEach((route) => {
-      let stops = "";
-      if (route.routeStops) {
-        stops = route.routeStops
-          .sort((a, b) => a.stopOrder - b.stopOrder)
-          .map((s) => `${s.stopName} (${s.distanceFromPrevious} km)`)
-          .join(" ➜ ");
-      }
-
-      body.innerHTML += `
-<tr>
-    <td>${route.routeId}</td>
-    <td>${route.routeName}</td>
-    <td>${route.distance}</td>
-    <td>${stops}</td>
-    <td>
-        <button class="btnUpdate"
-            onclick="editRoute('${route.routeId}')">
-            Edit
-        </button>
-    </td>
-</tr>`;
-    });
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-async function loadStopsForRoute() {
-  try {
-    const res = await fetch(`${API}/stop`);
-    const data = await res.json();
-    const tbody = document.getElementById("routeStopsBody");
-    if (!tbody) return;
-
-    tbody.innerHTML = data
-      .map(
-        (stop, index) => `
-<tr>
-  <td>
-    <input type="checkbox" value="${stop.stopId}" data-name="${stop.stopName}">
-  </td>
-  <td>${stop.stopName}</td>
-  <td>
-    <input type="number" class="stopOrder" value="${index + 1}" min="1">
-  </td>
-  <td>
-    <input type="number" class="distancePrev" value="${index == 0 ? 0 : ''}" min="0">
-  </td>
-</tr>`
-      )
-      .join("");
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-function getRouteStops() {
-  const rows = document.querySelectorAll("#routeStopsBody tr");
-  const routeStops = [];
-
-  rows.forEach((row) => {
-    const checkBox = row.querySelector("input[type='checkbox']");
-
-    if (checkBox.checked) {
-      routeStops.push({
-        stopId: checkBox.value,
-        stopName: checkBox.dataset.name,
-        stopOrder: parseInt(row.querySelector(".stopOrder").value),
-        distanceFromPrevious: parseFloat(row.querySelector(".distancePrev").value || 0)
-      });
+    if (el) {
+        el.value = value ?? "";
     }
-  });
-
-  return routeStops;
 }
 
-async function addRoute() {
- const route = {
-    routeId: getVal("routeInputId"),
-    routeName: getVal("routeName"),
-    distance: parseFloat(getVal("distance")),
-    routeStops: getRouteStops()
-};
 
-  try {
-    const res = await fetch(`${API}/route`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(route)
-    });
+function escapeHtml(value) {
 
-    if (!res.ok) throw new Error("Failed to add route");
-
-    alert("Route Added Successfully");
-    clearRoute();
-    loadRoute();
-  } catch (err) {
-    alert(err.message);
-  }
-}
-
-async function editRoute(routeId) {
-  try {
-    const res = await fetch(`${API}/route/${routeId}`);
-    if (!res.ok) throw new Error("Route not found");
-
-    const route = await res.json();
-
-    setVal("routeInputId", route.routeId);
-    setVal("routeName", route.routeName);
-    
-    setVal("distance", route.distance);
-
-    document.querySelectorAll("#routeStopsBody tr").forEach((row) => {
-      row.querySelector("input[type='checkbox']").checked = false;
-      row.querySelector(".stopOrder").value = "";
-      row.querySelector(".distancePrev").value = "";
-    });
-
-    if (route.routeStops) {
-      route.routeStops.forEach((stop) => {
-        document.querySelectorAll("#routeStopsBody tr").forEach((row) => {
-          const chk = row.querySelector("input[type='checkbox']");
-          if (chk.value === stop.stopId) {
-            chk.checked = true;
-            row.querySelector(".stopOrder").value = stop.stopOrder;
-            row.querySelector(".distancePrev").value = stop.distanceFromPrevious;
-          }
-        });
-      });
+    if (value === null || value === undefined) {
+        return "";
     }
-  } catch (err) {
-    alert(err.message);
-  }
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
-async function updateRoute() {
-  const route = {
-    routeId: getVal("routeInputId"),
-    routeName: getVal("routeName"),
-    
-    distance: parseFloat(getVal("distance")),
-    routeStops: getRouteStops()
-  };
 
-  try {
-    const res = await fetch(`${API}/route`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(route)
-    });
+function showMessage(message, type = "success") {
 
-    if (!res.ok) throw new Error("Failed to update route");
+    const box =
+        document.getElementById("message");
 
-    alert("Route Updated Successfully");
-    clearRoute();
-    loadRoute();
-  } catch (err) {
-    alert(err.message);
-  }
+    if (!box) return;
+
+    box.textContent = message;
+
+    box.className =
+        `message ${type}`;
+
+    box.style.display = "block";
+
+    setTimeout(() => {
+
+        box.style.display = "none";
+
+    }, 3500);
 }
 
-async function deleteRoute() {
-  const id = getVal("routeInputId");
-  if (!id) return alert("Please specify a Route ID to delete.");
 
-  try {
-    const res = await fetch(`${API}/route/${id}`, { method: "DELETE" });
+function showError(message) {
 
-    if (!res.ok) throw new Error("Failed to delete route");
+    console.error(message);
 
-    alert("Route Deleted Successfully");
-    clearRoute();
-    loadRoute();
-  } catch (err) {
-    alert(`Error: ${err.message}`);
-  }
+    showMessage(
+        message,
+        "error"
+    );
 }
 
-function clearRoute() {
-  setVal("routeInputId", "");
-  setVal("routeName", "");
-  
-  setVal("distance", "");
 
-  document.querySelectorAll("#routeStopsBody tr").forEach((row) => {
-    row.querySelector("input[type='checkbox']").checked = false;
-    row.querySelector(".stopOrder").value = "";
-    row.querySelector(".distancePrev").value = "";
-  });
-}
+/* =========================================================
+   API REQUEST
+========================================================= */
 
-/* ===========================
-   SCHEDULE CRUD
-=========================== */
-
-function getSelectedDays() {
-  const checkboxes = document.querySelectorAll('input[name="operatingDays"]:checked');
-  return Array.from(checkboxes).map((cb) => cb.value);
-}
-
-function setSelectedDays(daysList) {
-  const daysArray = Array.isArray(daysList)
-    ? daysList.map((d) => d.trim().toUpperCase())
-    : daysList ? daysList.split(",").map((d) => d.trim().toUpperCase()) : [];
-
-  document.querySelectorAll('input[name="operatingDays"]').forEach((cb) => {
-    cb.checked = daysArray.includes(cb.value.toUpperCase());
-  });
-}
-
-async function loadSchedule() {
+async function apiRequest(
+    url,
+    options = {}
+) {
 
     try {
 
-        const res = await fetch(`${API}/schedule`);
+        const response =
+            await fetch(url, {
 
-        const data = await res.json();
+                ...options,
 
-        const body = document.getElementById("scheduleTableBody");
+                headers: {
 
-        body.innerHTML = "";
+                    "Content-Type":
+                        "application/json",
 
-        data.forEach(schedule => {
+                    ...(options.headers || {})
 
-            const day =
-                schedule.operatingDays
-                    ? schedule.operatingDays.join(", ")
-                    : "";
+                }
 
-            body.innerHTML += `
+            });
 
-<tr>
 
-<td>${schedule.scheduleId}</td>
+        const text =
+            await response.text();
 
-<td>${schedule.busId}</td>
 
-<td>${schedule.routeId}</td>
+        let data = null;
 
-<td>${schedule.sourceName}</td>
 
-<td>${schedule.destinationName}</td>
+        if (text) {
 
-<td>${schedule.departureTime}</td>
+            try {
 
-<td>${schedule.arrivalTime}</td>
+                data =
+                    JSON.parse(text);
 
-<td>${day}</td>
+            } catch {
 
-<td>
+                data = text;
 
-<button class="btnUpdate"
+            }
 
-onclick='editSchedule(${JSON.stringify(schedule)})'>
+        }
 
-Edit
 
-</button>
+        if (!response.ok) {
 
-</td>
+            let message =
+                `HTTP ${response.status}`;
 
-</tr>
 
-`;
+            if (
+                typeof data === "string" &&
+                data.trim()
+            ) {
+
+                message = data;
+
+            } else if (data) {
+
+                message =
+                    data.message ||
+                    data.error ||
+                    message;
+
+            }
+
+
+            throw new Error(message);
+
+        }
+
+
+        return data;
+
+    } catch (error) {
+
+        console.error(
+            "API Error:",
+            error
+        );
+
+        throw error;
+
+    }
+}
+
+
+/* =========================================================
+   TAB
+========================================================= */
+
+function showTab(
+    tabId,
+    event
+) {
+
+    document
+        .querySelectorAll(".tabContent")
+        .forEach(tab => {
+
+            tab.style.display =
+                "none";
 
         });
 
+
+    document
+        .querySelectorAll(".tabButton")
+        .forEach(button => {
+
+            button.classList
+                .remove("active");
+
+        });
+
+
+    const tab =
+        document.getElementById(tabId);
+
+
+    if (tab) {
+
+        tab.style.display =
+            "block";
+
     }
 
-    catch(err){
 
-        console.error(err);
+    if (
+        event &&
+        event.currentTarget
+    ) {
+
+        event.currentTarget
+            .classList
+            .add("active");
 
     }
 
+
+    if (tabId === "bus") {
+        loadBuses();
+    }
+
+    if (tabId === "stop") {
+        loadStops();
+    }
+
+    if (tabId === "route") {
+        loadRoutes();
+    }
+
+    if (tabId === "routeStop") {
+
+        loadRoutes();
+
+        loadStops();
+
+        loadRouteStopMatrix();
+
+    }
+
+    if (tabId === "schedule") {
+
+        loadRoutes();
+
+        loadSchedules();
+
+    }
 }
 
-async function loadBusDropdown() {
-  try {
-    const res = await fetch(`${API}/bus`);
-    const data = await res.json();
-    populateDropdown("scheduleBusId", data, "busId", (b) => `${b.busNumber} (${b.busName})`, "-- Select Bus --");
-  } catch (err) {
-    console.error(err);
-  }
+
+/* =========================================================
+   BUS
+========================================================= */
+
+async function loadBuses() {
+
+    try {
+
+        allBuses =
+            await apiRequest(
+                `${API}/bus`
+            ) || [];
+
+
+        renderBuses();
+
+    } catch (error) {
+
+        showError(
+            "Unable to load buses: " +
+            error.message
+        );
+
+    }
 }
 
-async function loadRouteDropdown() {
-  try {
-    const res = await fetch(`${API}/route`);
-    const data = await res.json();
-    populateDropdown("scheduleRouteId", data, "routeId", "routeName", "-- Select Route --");
-  } catch (err) {
-    console.error(err);
-  }
-}
-async function loadSourceDestination(){
 
-    const routeId=getVal("scheduleRouteId");
+function renderBuses() {
 
-    if(!routeId){
+    const tbody =
+        document.getElementById(
+            "busTableBody"
+        );
 
-        setVal("sourceName","");
+    if (!tbody) return;
 
-        setVal("destinationName","");
+    tbody.innerHTML = "";
+
+
+    if (!allBuses.length) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7"
+                    class="emptyCell">
+                    No buses found
+                </td>
+            </tr>
+        `;
 
         return;
+    }
+
+
+    allBuses.forEach(bus => {
+
+        const tr =
+            document.createElement("tr");
+
+
+        tr.innerHTML = `
+
+            <td>
+                ${escapeHtml(bus.busId)}
+            </td>
+
+            <td>
+                ${escapeHtml(bus.busNumber)}
+            </td>
+
+            <td>
+                ${escapeHtml(bus.busName)}
+            </td>
+
+            <td>
+                ${escapeHtml(bus.busType)}
+            </td>
+
+            <td>
+                ${escapeHtml(bus.status || "")}
+            </td>
+
+            <td>
+                ${escapeHtml(
+                    bus.availableFrom || ""
+                )}
+            </td>
+
+            <td>
+
+                <button
+                    class="btnTableEdit"
+                    onclick="editBus('${escapeHtml(bus.busId)}')">
+                    Edit
+                </button>
+
+            </td>
+        `;
+
+
+        tbody.appendChild(tr);
+
+    });
+}
+
+
+async function addBus() {
+
+    const bus = {
+
+        busId:
+            getVal("busId"),
+
+        busNumber:
+            getVal("busNumber"),
+
+        busName:
+            getVal("busName"),
+
+        busType:
+            getVal("busType"),
+
+        status:
+            getVal("busStatus"),
+
+        availableFrom:
+            getVal("availableFrom")
+
+    };
+
+
+    if (!bus.busId) {
+
+        showError(
+            "Enter Bus ID"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        await apiRequest(
+            `${API}/bus`,
+            {
+                method: "POST",
+                body: JSON.stringify(bus)
+            }
+        );
+
+
+        showMessage(
+            "Bus added successfully"
+        );
+
+
+        clearBus();
+
+        loadBuses();
+
+    } catch (error) {
+
+        showError(
+            error.message
+        );
+
+    }
+}
+
+
+async function updateBus() {
+
+    const busId =
+        getVal("busId");
+
+
+    if (!busId) {
+
+        showError(
+            "Enter Bus ID"
+        );
+
+        return;
+    }
+
+
+    const bus = {
+
+        busId,
+
+        busNumber:
+            getVal("busNumber"),
+
+        busName:
+            getVal("busName"),
+
+        busType:
+            getVal("busType"),
+
+        status:
+            getVal("busStatus"),
+
+        availableFrom:
+            getVal("availableFrom")
+
+    };
+
+
+    try {
+
+        await apiRequest(
+            `${API}/bus`,
+            {
+                method: "PUT",
+                body: JSON.stringify(bus)
+            }
+        );
+
+
+        showMessage(
+            "Bus updated successfully"
+        );
+
+
+        clearBus();
+
+        loadBuses();
+
+    } catch (error) {
+
+        showError(
+            error.message
+        );
+
+    }
+}
+
+
+async function deleteBus() {
+
+    const id =
+        getVal("busId");
+
+
+    if (!id) {
+
+        showError(
+            "Enter Bus ID"
+        );
+
+        return;
+    }
+
+
+    if (!confirm(
+        `Delete bus ${id}?`
+    )) {
+
+        return;
+    }
+
+
+    try {
+
+        await apiRequest(
+            `${API}/bus/${encodeURIComponent(id)}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+
+        showMessage(
+            "Bus deleted successfully"
+        );
+
+
+        clearBus();
+
+        loadBuses();
+
+    } catch (error) {
+
+        showError(
+            error.message
+        );
+
+    }
+}
+
+
+function editBus(id) {
+
+    const bus =
+        allBuses.find(
+            b =>
+                b.busId === id
+        );
+
+
+    if (!bus) return;
+
+
+    setVal(
+        "busId",
+        bus.busId
+    );
+
+    setVal(
+        "busNumber",
+        bus.busNumber
+    );
+
+    setVal(
+        "busName",
+        bus.busName
+    );
+
+    setVal(
+        "busType",
+        bus.busType
+    );
+
+    setVal(
+        "busStatus",
+        bus.status
+    );
+
+    setVal(
+        "availableFrom",
+        bus.availableFrom
+    );
+}
+
+
+function clearBus() {
+
+    setVal("busId", "");
+
+    setVal("busNumber", "");
+
+    setVal("busName", "");
+
+    setVal("busType", "");
+
+    setVal("busStatus", "");
+
+    setVal("availableFrom", "");
+}
+
+
+/* =========================================================
+   STOP
+========================================================= */
+
+async function loadStops() {
+
+    try {
+
+        allStops =
+            await apiRequest(
+                `${API}/stop`
+            ) || [];
+
+
+        renderStops();
+
+
+        /*
+         * If Route Stop tab is visible,
+         * rebuild its table after stops load.
+         */
+
+        if (
+            document.getElementById(
+                "routeStop"
+            )?.style.display !== "none"
+        ) {
+
+            renderRouteStopMatrix();
+
+        }
+
+    } catch (error) {
+
+        showError(
+            "Unable to load stops: " +
+            error.message
+        );
+
+    }
+}
+
+
+function renderStops() {
+
+    const tbody =
+        document.getElementById(
+            "stopTableBody"
+        );
+
+    if (!tbody) return;
+
+
+    tbody.innerHTML = "";
+
+
+    if (!allStops.length) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="3"
+                    class="emptyCell">
+                    No stops found
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+
+    allStops.forEach(stop => {
+
+        const tr =
+            document.createElement("tr");
+
+
+        tr.innerHTML = `
+
+            <td>
+                ${escapeHtml(
+                    stop.stopId
+                )}
+            </td>
+
+            <td>
+                ${escapeHtml(
+                    stop.stopName
+                )}
+            </td>
+
+            <td>
+
+                <button
+                    class="btnTableEdit"
+                    onclick="editStop('${escapeHtml(stop.stopId)}')">
+                    Edit
+                </button>
+
+            </td>
+        `;
+
+
+        tbody.appendChild(tr);
+
+    });
+}
+
+
+async function addStop() {
+
+    const stop = {
+
+        stopId:
+            getVal("stopId"),
+
+        stopName:
+            getVal("stopName")
+
+    };
+
+
+    if (
+        !stop.stopId ||
+        !stop.stopName
+    ) {
+
+        showError(
+            "Enter Stop ID and Stop Name"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        await apiRequest(
+            `${API}/stop`,
+            {
+                method: "POST",
+                body: JSON.stringify(stop)
+            }
+        );
+
+
+        showMessage(
+            "Stop added successfully"
+        );
+
+
+        clearStop();
+
+        loadStops();
+
+    } catch (error) {
+
+        showError(
+            error.message
+        );
+
+    }
+}
+
+
+async function updateStop() {
+
+    const stop = {
+
+        stopId:
+            getVal("stopId"),
+
+        stopName:
+            getVal("stopName")
+
+    };
+
+
+    if (!stop.stopId) {
+
+        showError(
+            "Enter Stop ID"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        await apiRequest(
+            `${API}/stop`,
+            {
+                method: "PUT",
+                body: JSON.stringify(stop)
+            }
+        );
+
+
+        showMessage(
+            "Stop updated successfully"
+        );
+
+
+        clearStop();
+
+        loadStops();
+
+    } catch (error) {
+
+        showError(
+            error.message
+        );
+
+    }
+}
+
+
+async function deleteStop() {
+
+    const id =
+        getVal("stopId");
+
+
+    if (!id) {
+
+        showError(
+            "Enter Stop ID"
+        );
+
+        return;
+    }
+
+
+    if (!confirm(
+        `Delete stop ${id}?`
+    )) {
+
+        return;
+    }
+
+
+    try {
+
+        await apiRequest(
+            `${API}/stop/${encodeURIComponent(id)}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+
+        showMessage(
+            "Stop deleted successfully"
+        );
+
+
+        clearStop();
+
+        loadStops();
+
+    } catch (error) {
+
+        showError(
+            error.message
+        );
+
+    }
+}
+
+
+function editStop(id) {
+
+    const stop =
+        allStops.find(
+            s =>
+                s.stopId === id
+        );
+
+
+    if (!stop) return;
+
+
+    setVal(
+        "stopId",
+        stop.stopId
+    );
+
+    setVal(
+        "stopName",
+        stop.stopName
+    );
+}
+
+
+function clearStop() {
+
+    setVal(
+        "stopId",
+        ""
+    );
+
+    setVal(
+        "stopName",
+        ""
+    );
+}
+
+
+/* =========================================================
+   ROUTE
+========================================================= */
+
+async function loadRoutes() {
+
+    try {
+
+        allRoutes =
+            await apiRequest(
+                `${API}/route`
+            ) || [];
+
+
+        renderRoutes();
+
+    } catch (error) {
+
+        showError(
+            "Unable to load routes: " +
+            error.message
+        );
+
+    }
+}
+
+
+function renderRoutes() {
+
+    const tbody =
+        document.getElementById(
+            "routeTableBody"
+        );
+
+    if (!tbody) return;
+
+
+    tbody.innerHTML = "";
+
+
+    if (!allRoutes.length) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6"
+                    class="emptyCell">
+                    No routes found
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+
+    allRoutes.forEach(route => {
+
+        const tr =
+            document.createElement("tr");
+
+
+        tr.innerHTML = `
+
+            <td>
+                ${escapeHtml(
+                    route.routeId
+                )}
+            </td>
+
+            <td>
+                ${escapeHtml(
+                    route.routeName
+                )}
+            </td>
+
+            <td>
+                ${escapeHtml(
+                    route.source
+                )}
+            </td>
+
+            <td>
+                ${escapeHtml(
+                    route.destination
+                )}
+            </td>
+
+            <td>
+                ${escapeHtml(
+                    route.distance
+                )}
+            </td>
+
+            <td>
+
+                <button
+                    class="btnTableEdit"
+                    onclick="editRoute('${escapeHtml(route.routeId)}')">
+                    Edit
+                </button>
+
+            </td>
+        `;
+
+
+        tbody.appendChild(tr);
+
+    });
+}
+
+
+async function addRoute() {
+
+    const distanceValue =
+        getVal("distance");
+
+
+    const route = {
+
+        routeId:
+            getVal("routeInputId"),
+
+        routeName:
+            getVal("routeName"),
+
+        source:
+            getVal("source"),
+
+        destination:
+            getVal("destination"),
+
+        distance:
+            distanceValue
+                ? Number(distanceValue)
+                : 0
+
+    };
+
+
+    if (
+        !route.routeId ||
+        !route.routeName
+    ) {
+
+        showError(
+            "Route ID and Route Name are required"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        await apiRequest(
+            `${API}/route`,
+            {
+                method: "POST",
+                body: JSON.stringify(route)
+            }
+        );
+
+
+        showMessage(
+            "Route added successfully"
+        );
+
+
+        clearRoute();
+
+        loadRoutes();
+
+    } catch (error) {
+
+        showError(
+            error.message
+        );
+
+    }
+}
+
+
+async function updateRoute() {
+
+    const route = {
+
+        routeId:
+            getVal("routeInputId"),
+
+        routeName:
+            getVal("routeName"),
+
+        source:
+            getVal("source"),
+
+        destination:
+            getVal("destination"),
+
+        distance:
+            Number(
+                getVal("distance") || 0
+            )
+
+    };
+
+
+    if (!route.routeId) {
+
+        showError(
+            "Enter Route ID"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        await apiRequest(
+            `${API}/route`,
+            {
+                method: "PUT",
+                body: JSON.stringify(route)
+            }
+        );
+
+
+        showMessage(
+            "Route updated successfully"
+        );
+
+
+        clearRoute();
+
+        loadRoutes();
+
+    } catch (error) {
+
+        showError(
+            error.message
+        );
+
+    }
+}
+
+
+async function deleteRoute() {
+
+    const id =
+        getVal("routeInputId");
+
+
+    if (!id) {
+
+        showError(
+            "Enter Route ID"
+        );
+
+        return;
+    }
+
+
+    if (!confirm(
+        `Delete route ${id}?`
+    )) {
+
+        return;
+    }
+
+
+    try {
+
+        await apiRequest(
+            `${API}/route/${encodeURIComponent(id)}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+
+        showMessage(
+            "Route deleted successfully"
+        );
+
+
+        clearRoute();
+
+        loadRoutes();
+
+    } catch (error) {
+
+        showError(
+            error.message
+        );
+
+    }
+}
+
+
+function editRoute(id) {
+
+    const route =
+        allRoutes.find(
+            r =>
+                r.routeId === id
+        );
+
+
+    if (!route) return;
+
+
+    setVal(
+        "routeInputId",
+        route.routeId
+    );
+
+    setVal(
+        "routeName",
+        route.routeName
+    );
+
+    setVal(
+        "source",
+        route.source
+    );
+
+    setVal(
+        "destination",
+        route.destination
+    );
+
+    setVal(
+        "distance",
+        route.distance
+    );
+}
+
+
+function clearRoute() {
+
+    setVal(
+        "routeInputId",
+        ""
+    );
+
+    setVal(
+        "routeName",
+        ""
+    );
+
+    setVal(
+        "source",
+        ""
+    );
+
+    setVal(
+        "destination",
+        ""
+    );
+
+    setVal(
+        "distance",
+        ""
+    );
+}
+
+
+/* =========================================================
+   ROUTE STOP MATRIX
+========================================================= */
+
+/*
+ * Find an existing RouteStop using
+ * routeId + stopId.
+ */
+
+function findRouteStop(
+    routeId,
+    stopId
+) {
+
+    return allRouteStops.find(
+        rs =>
+            String(rs.routeId) ===
+                String(routeId) &&
+            String(rs.stopId) ===
+                String(stopId)
+    );
+}
+
+
+/*
+ * Create a safe DOM key.
+ */
+
+function routeStopKey(
+    routeId,
+    stopId
+) {
+
+    return (
+        String(routeId)
+            .replace(/[^a-zA-Z0-9_-]/g, "_")
+        +
+        "_"
+        +
+        String(stopId)
+            .replace(/[^a-zA-Z0-9_-]/g, "_")
+    );
+}
+
+
+/* =========================================================
+   LOAD ALL ROUTE STOPS
+========================================================= */
+
+async function loadRouteStopMatrix() {
+
+    try {
+
+        /*
+         * Load routes and stops first.
+         */
+
+        if (!allRoutes.length) {
+
+            allRoutes =
+                await apiRequest(
+                    `${API}/route`
+                ) || [];
+
+        }
+
+
+        if (!allStops.length) {
+
+            allStops =
+                await apiRequest(
+                    `${API}/stop`
+                ) || [];
+
+        }
+
+
+        /*
+         * Existing RouteStop documents.
+         */
+
+        allRouteStops =
+            await apiRequest(
+                `${API}/route-stop`
+            ) || [];
+
+
+        renderRouteStopMatrix();
+
+    } catch (error) {
+
+        showError(
+            "Unable to load route stops: " +
+            error.message
+        );
+
+    }
+}
+
+
+/* =========================================================
+   RENDER ALL ROUTES × ALL STOPS
+========================================================= */
+
+function renderRouteStopMatrix() {
+
+    const tbody =
+        document.getElementById(
+            "routeStopTableBody"
+        );
+
+
+    if (!tbody) return;
+
+
+    tbody.innerHTML = "";
+
+
+    if (!allRoutes.length) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6"
+                    class="emptyCell">
+                    No routes found
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+
+    if (!allStops.length) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6"
+                    class="emptyCell">
+                    No stops found
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+
+    /*
+     * ALL ROUTES
+     *
+     *   +
+     *
+     * ALL STOPS
+     *
+     * Every combination gets one row.
+     */
+
+    allRoutes.forEach(route => {
+
+
+        /*
+         * Optional route heading.
+         */
+
+        const routeHeader =
+            document.createElement("tr");
+
+
+        routeHeader.className =
+            "routeGroupRow";
+
+
+        routeHeader.innerHTML = `
+            <td colspan="6">
+                ${escapeHtml(
+                    route.routeId
+                )}
+                -
+                ${escapeHtml(
+                    route.routeName
+                )}
+
+                (${escapeHtml(
+                    route.source
+                )}
+                →
+                ${escapeHtml(
+                    route.destination
+                )})
+            </td>
+        `;
+
+
+        tbody.appendChild(
+            routeHeader
+        );
+
+
+        /*
+         * ALL STOPS for this route.
+         */
+
+        allStops.forEach(stop => {
+
+            const existing =
+                findRouteStop(
+                    route.routeId,
+                    stop.stopId
+                );
+
+
+            const key =
+                routeStopKey(
+                    route.routeId,
+                    stop.stopId
+                );
+
+
+            const tr =
+                document.createElement("tr");
+
+
+            /*
+             * Existing RouteStop
+             * means checkbox checked.
+             */
+
+            const checked =
+                existing
+                    ? "checked"
+                    : "";
+
+
+            const order =
+                existing &&
+                existing.stopOrder !== undefined
+                    ? existing.stopOrder
+                    : "";
+
+
+            const distance =
+                existing &&
+                existing.distanceFromPrevious !== undefined
+                    ? existing.distanceFromPrevious
+                    : "";
+
+
+            tr.dataset.routeId =
+                route.routeId;
+
+
+            tr.dataset.stopId =
+                stop.stopId;
+
+
+            tr.innerHTML = `
+
+                <!-- ROUTE -->
+
+                <td class="routeNameCell">
+
+                    ${escapeHtml(
+                        route.routeId
+                    )}
+
+                </td>
+
+
+                <!-- CHECKBOX -->
+
+                <td>
+
+                    <input
+                        type="checkbox"
+                        class="routeStopCheckbox"
+                        data-key="${key}"
+                        data-route-id="${escapeHtml(route.routeId)}"
+                        data-stop-id="${escapeHtml(stop.stopId)}"
+                        ${checked}
+                        onchange="routeStopCheckboxChanged(this)">
+
+                </td>
+
+
+                <!-- STOP ID -->
+
+                <td>
+
+                    ${escapeHtml(
+                        stop.stopId
+                    )}
+
+                </td>
+
+
+                <!-- STOP NAME -->
+
+                <td class="stopNameCell">
+
+                    ${escapeHtml(
+                        stop.stopName
+                    )}
+
+                </td>
+
+
+                <!-- STOP ORDER -->
+
+                <td>
+
+                    <input
+                        type="number"
+                        min="1"
+                        class="routeStopNumber"
+                        data-order-key="${key}"
+                        value="${escapeHtml(order)}"
+                        placeholder="Order"
+                        ${existing ? "" : "disabled"}>
+
+                </td>
+
+
+                <!-- DISTANCE -->
+
+                <td>
+
+                    <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        class="routeStopDistance"
+                        data-distance-key="${key}"
+                        value="${escapeHtml(distance)}"
+                        placeholder="Distance"
+                        ${existing ? "" : "disabled"}>
+
+                </td>
+
+            `;
+
+
+            tbody.appendChild(tr);
+
+        });
+
+    });
+}
+
+
+/* =========================================================
+   CHECKBOX CHANGE
+========================================================= */
+
+function routeStopCheckboxChanged(
+    checkbox
+) {
+
+    const row =
+        checkbox.closest("tr");
+
+
+    if (!row) return;
+
+
+    const orderInput =
+        row.querySelector(
+            ".routeStopNumber"
+        );
+
+
+    const distanceInput =
+        row.querySelector(
+            ".routeStopDistance"
+        );
+
+
+    if (
+        checkbox.checked
+    ) {
+
+        /*
+         * Enable fields.
+         */
+
+        if (orderInput) {
+
+            orderInput.disabled =
+                false;
+
+        }
+
+
+        if (distanceInput) {
+
+            distanceInput.disabled =
+                false;
+
+        }
+
+
+        /*
+         * If newly selected,
+         * automatically suggest
+         * the next order number.
+         */
+
+        if (
+            orderInput &&
+            !orderInput.value
+        ) {
+
+            const routeId =
+                checkbox.dataset.routeId;
+
+
+            const routeRows =
+                document.querySelectorAll(
+                    `tr[data-route-id="${CSS.escape(routeId)}"]`
+                );
+
+
+            let maxOrder = 0;
+
+
+            routeRows.forEach(
+                routeRow => {
+
+                    const cb =
+                        routeRow.querySelector(
+                            ".routeStopCheckbox"
+                        );
+
+
+                    if (
+                        cb &&
+                        cb.checked
+                    ) {
+
+                        const input =
+                            routeRow.querySelector(
+                                ".routeStopNumber"
+                            );
+
+
+                        if (input) {
+
+                            const value =
+                                Number(
+                                    input.value
+                                );
+
+
+                            if (
+                                value >
+                                maxOrder
+                            ) {
+
+                                maxOrder =
+                                    value;
+
+                            }
+
+                        }
+
+                    }
+
+                }
+            );
+
+
+            orderInput.value =
+                maxOrder + 1;
+
+        }
+
+    } else {
+
+        /*
+         * Disable and clear
+         * order/distance.
+         */
+
+        if (orderInput) {
+
+            orderInput.value =
+                "";
+
+            orderInput.disabled =
+                true;
+
+        }
+
+
+        if (distanceInput) {
+
+            distanceInput.value =
+                "";
+
+            distanceInput.disabled =
+                true;
+
+        }
+
+    }
+}
+
+
+/* =========================================================
+   GET MATRIX DATA
+========================================================= */
+
+function getRouteStopMatrixData() {
+
+    const rows =
+        document.querySelectorAll(
+            "#routeStopTableBody tr[data-route-id]"
+        );
+
+
+    const result = [];
+
+
+    rows.forEach(row => {
+
+        const checkbox =
+            row.querySelector(
+                ".routeStopCheckbox"
+            );
+
+
+        if (!checkbox) return;
+
+
+        const routeId =
+            checkbox.dataset.routeId;
+
+
+        const stopId =
+            checkbox.dataset.stopId;
+
+
+        const orderInput =
+            row.querySelector(
+                ".routeStopNumber"
+            );
+
+
+        const distanceInput =
+            row.querySelector(
+                ".routeStopDistance"
+            );
+
+
+        const selected =
+            checkbox.checked;
+
+
+        result.push({
+
+            routeId,
+
+            stopId,
+
+            selected,
+
+            stopOrder:
+                orderInput &&
+                orderInput.value
+                    ? Number(
+                        orderInput.value
+                    )
+                    : 0,
+
+            distanceFromPrevious:
+                distanceInput &&
+                distanceInput.value
+                    ? Number(
+                        distanceInput.value
+                    )
+                    : 0
+
+        });
+
+    });
+
+
+    return result;
+}
+
+
+/* =========================================================
+   SAVE ALL SELECTED ROUTE STOPS
+========================================================= */
+
+async function saveAllRouteStops() {
+
+    const data =
+        getRouteStopMatrixData();
+
+
+    const selected =
+        data.filter(
+            item =>
+                item.selected
+        );
+
+
+    if (!selected.length) {
+
+        showError(
+            "Select at least one stop"
+        );
+
+        return;
+    }
+
+
+    /*
+     * Validate selected rows.
+     */
+
+    for (
+        const item of selected
+    ) {
+
+        if (
+            !item.stopOrder ||
+            item.stopOrder < 1
+        ) {
+
+            showError(
+                `Enter Stop Order for ${item.routeId} - ${item.stopId}`
+            );
+
+            return;
+        }
+
+
+        if (
+            item.distanceFromPrevious < 0
+        ) {
+
+            showError(
+                `Invalid distance for ${item.routeId} - ${item.stopId}`
+            );
+
+            return;
+        }
 
     }
 
-    try{
 
-        const res=await fetch(`${API}/route/${routeId}`);
+    try {
 
-        const route=await res.json();
+        /*
+         * First load latest RouteStops.
+         */
 
-        if(route.routeStops && route.routeStops.length){
+        allRouteStops =
+            await apiRequest(
+                `${API}/route-stop`
+            ) || [];
 
-            route.routeStops.sort((a,b)=>a.stopOrder-b.stopOrder);
 
-            setVal("sourceName",route.routeStops[0].stopName);
+        /*
+         * Process every matrix row.
+         */
 
-            setVal(
+        for (
+            const item of data
+        ) {
 
-                "destinationName",
+            const existing =
+                findRouteStop(
+                    item.routeId,
+                    item.stopId
+                );
 
-                route.routeStops[route.routeStops.length-1].stopName
 
+            /*
+             * CHECKED
+             *
+             * Create or update.
+             */
+
+            if (item.selected) {
+
+                const stop =
+                    allStops.find(
+                        s =>
+                            String(
+                                s.stopId
+                            ) ===
+                            String(
+                                item.stopId
+                            )
+                    );
+
+
+                const routeStop = {
+
+                    id:
+                        `${item.routeId}_${item.stopId}`,
+
+                    routeId:
+                        item.routeId,
+
+                    stopId:
+                        item.stopId,
+
+                    stopName:
+                        stop
+                            ? stop.stopName
+                            : "",
+
+                    stopOrder:
+                        item.stopOrder,
+
+                    distanceFromPrevious:
+                        item.distanceFromPrevious
+
+                };
+
+
+                if (existing) {
+
+                    /*
+                     * UPDATE
+                     */
+
+                    await apiRequest(
+                        `${API}/route-stop`,
+                        {
+                            method: "PUT",
+                            body:
+                                JSON.stringify(
+                                    routeStop
+                                )
+                        }
+                    );
+
+                } else {
+
+                    /*
+                     * INSERT
+                     */
+
+                    await apiRequest(
+                        `${API}/route-stop`,
+                        {
+                            method: "POST",
+                            body:
+                                JSON.stringify(
+                                    routeStop
+                                )
+                        }
+                    );
+
+                }
+
+            }
+
+        }
+
+
+        /*
+         * Reload after save.
+         */
+
+        allRouteStops =
+            await apiRequest(
+                `${API}/route-stop`
+            ) || [];
+
+
+        renderRouteStopMatrix();
+
+
+        showMessage(
+            "Route stops saved successfully"
+        );
+
+    } catch (error) {
+
+        showError(
+            "Unable to save route stops: " +
+            error.message
+        );
+
+    }
+}
+
+
+/* =========================================================
+   DELETE UNSELECTED ROUTE STOPS
+========================================================= */
+
+async function deleteSelectedRouteStops() {
+
+    const data =
+        getRouteStopMatrixData();
+
+
+    const unselected =
+        data.filter(
+            item =>
+                !item.selected
+        );
+
+
+    const existingUnselected =
+        unselected.filter(
+            item =>
+                findRouteStop(
+                    item.routeId,
+                    item.stopId
+                )
+        );
+
+
+    if (
+        !existingUnselected.length
+    ) {
+
+        showMessage(
+            "No existing route stops to delete"
+        );
+
+        return;
+    }
+
+
+    if (
+        !confirm(
+            `Delete ${existingUnselected.length} unselected route stop(s)?`
+        )
+    ) {
+
+        return;
+    }
+
+
+    try {
+
+        for (
+            const item
+            of existingUnselected
+        ) {
+
+            /*
+             * Delete individual RouteStop.
+             *
+             * ID:
+             *
+             * routeId_stopId
+             */
+
+            const id =
+                `${item.routeId}_${item.stopId}`;
+
+
+            await apiRequest(
+                `${API}/route-stop/${encodeURIComponent(id)}`,
+                {
+                    method: "DELETE"
+                }
+            );
+
+        }
+
+
+        allRouteStops =
+            await apiRequest(
+                `${API}/route-stop`
+            ) || [];
+
+
+        renderRouteStopMatrix();
+
+
+        showMessage(
+            "Unselected route stops deleted"
+        );
+
+    } catch (error) {
+
+        showError(
+            "Unable to delete route stops: " +
+            error.message
+        );
+
+    }
+}
+
+
+/* =========================================================
+   SCHEDULE
+========================================================= */
+
+async function loadSchedules() {
+
+    try {
+
+        allSchedules =
+            await apiRequest(
+                `${API}/schedule`
+            ) || [];
+
+
+        renderSchedules();
+
+    } catch (error) {
+
+        showError(
+            "Unable to load schedules: " +
+            error.message
+        );
+
+    }
+}
+
+
+function renderSchedules() {
+
+    const tbody =
+        document.getElementById(
+            "scheduleTableBody"
+        );
+
+
+    if (!tbody) return;
+
+
+    tbody.innerHTML = "";
+
+
+    if (!allSchedules.length) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8"
+                    class="emptyCell">
+                    No schedules found
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+
+    allSchedules.forEach(
+        schedule => {
+
+            const departure =
+                Array.isArray(
+                    schedule.departureTimes
+                )
+                    ? schedule.departureTimes.join(", ")
+                    : "";
+
+
+            const arrival =
+                Array.isArray(
+                    schedule.arrivalTimes
+                )
+                    ? schedule.arrivalTimes.join(", ")
+                    : "";
+
+
+            const days =
+                Array.isArray(
+                    schedule.operatingDays
+                )
+                    ? schedule.operatingDays.join(", ")
+                    : "";
+
+
+            const tr =
+                document.createElement("tr");
+
+
+            tr.innerHTML = `
+
+                <td>
+                    ${escapeHtml(
+                        schedule.scheduleId
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        schedule.routeId
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        schedule.sourceName
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        schedule.destinationName
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        departure
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        arrival
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        days
+                    )}
+                </td>
+
+                <td>
+
+                    <button
+                        class="btnTableEdit"
+                        onclick="editSchedule('${escapeHtml(schedule.scheduleId)}')">
+                        Edit
+                    </button>
+
+                </td>
+
+            `;
+
+
+            tbody.appendChild(tr);
+
+        }
+    );
+}
+
+
+/* =========================================================
+   SOURCE / DESTINATION
+========================================================= */
+
+function loadSourceDestination() {
+
+    const routeId =
+        getVal(
+            "scheduleRouteId"
+        );
+
+
+    const route =
+        allRoutes.find(
+            r =>
+                r.routeId ===
+                routeId
+        );
+
+
+    if (!route) {
+
+        setVal(
+            "sourceName",
+            ""
+        );
+
+        setVal(
+            "destinationName",
+            ""
+        );
+
+        return;
+    }
+
+
+    setVal(
+        "sourceName",
+        route.source
+    );
+
+
+    setVal(
+        "destinationName",
+        route.destination
+    );
+}
+
+
+/* =========================================================
+   POPULATE SCHEDULE ROUTES
+========================================================= */
+
+function populateScheduleRoutes() {
+
+    const select =
+        document.getElementById(
+            "scheduleRouteId"
+        );
+
+
+    if (!select) return;
+
+
+    const oldValue =
+        select.value;
+
+
+    select.innerHTML = `
+        <option value="">
+            -- Select Route --
+        </option>
+    `;
+
+
+    allRoutes.forEach(
+        route => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                route.routeId;
+
+
+            option.textContent =
+                `${route.routeId} - ${route.routeName}`;
+
+
+            select.appendChild(
+                option
+            );
+
+        }
+    );
+
+
+    if (oldValue) {
+
+        select.value =
+            oldValue;
+
+    }
+}
+
+
+/* =========================================================
+   DEPARTURE TIMES
+========================================================= */
+
+function addDepartureTime(
+    value = ""
+) {
+
+    const container =
+        document.getElementById(
+            "departureTimesContainer"
+        );
+
+
+    if (!container) return;
+
+
+    const row =
+        document.createElement(
+            "div"
+        );
+
+
+    row.className =
+        "timeRow";
+
+
+    row.innerHTML = `
+
+        <input
+            type="time"
+            class="departureTime"
+            value="${escapeHtml(value)}">
+
+        <button
+            type="button"
+            class="btn btnDelete"
+            onclick="removeDepartureTime(this)">
+            Remove
+        </button>
+
+    `;
+
+
+    container.appendChild(
+        row
+    );
+}
+
+
+function removeDepartureTime(
+    button
+) {
+
+    const rows =
+        document.querySelectorAll(
+            "#departureTimesContainer .timeRow"
+        );
+
+
+    if (rows.length <= 1) {
+
+        if (rows[0]) {
+
+            rows[0]
+                .querySelector("input")
+                .value = "";
+
+        }
+
+        return;
+    }
+
+
+    button
+        .closest(".timeRow")
+        ?.remove();
+}
+
+
+function getDepartureTimes() {
+
+    return [
+        ...document.querySelectorAll(
+            ".departureTime"
+        )
+    ]
+        .map(
+            input =>
+                input.value
+        )
+        .filter(Boolean);
+}
+
+
+/* =========================================================
+   ARRIVAL TIMES
+========================================================= */
+
+function addArrivalTime(
+    value = ""
+) {
+
+    const container =
+        document.getElementById(
+            "arrivalTimesContainer"
+        );
+
+
+    if (!container) return;
+
+
+    const row =
+        document.createElement(
+            "div"
+        );
+
+
+    row.className =
+        "timeRow";
+
+
+    row.innerHTML = `
+
+        <input
+            type="time"
+            class="arrivalTime"
+            value="${escapeHtml(value)}">
+
+        <button
+            type="button"
+            class="btn btnDelete"
+            onclick="removeArrivalTime(this)">
+            Remove
+        </button>
+
+    `;
+
+
+    container.appendChild(
+        row
+    );
+}
+
+
+function removeArrivalTime(
+    button
+) {
+
+    const rows =
+        document.querySelectorAll(
+            "#arrivalTimesContainer .timeRow"
+        );
+
+
+    if (rows.length <= 1) {
+
+        if (rows[0]) {
+
+            rows[0]
+                .querySelector("input")
+                .value = "";
+
+        }
+
+        return;
+    }
+
+
+    button
+        .closest(".timeRow")
+        ?.remove();
+}
+
+
+function getArrivalTimes() {
+
+    return [
+        ...document.querySelectorAll(
+            ".arrivalTime"
+        )
+    ]
+        .map(
+            input =>
+                input.value
+        )
+        .filter(Boolean);
+}
+
+
+/* =========================================================
+   OPERATING DAYS
+========================================================= */
+
+function getOperatingDays() {
+
+    return [
+        ...document.querySelectorAll(
+            'input[name="operatingDays"]:checked'
+        )
+    ]
+        .map(
+            checkbox =>
+                checkbox.value
+        );
+}
+
+
+function setOperatingDays(
+    days
+) {
+
+    document
+        .querySelectorAll(
+            'input[name="operatingDays"]'
+        )
+        .forEach(
+            checkbox => {
+
+                checkbox.checked =
+                    Array.isArray(days) &&
+                    days.includes(
+                        checkbox.value
+                    );
+
+            }
+        );
+}
+
+
+/* =========================================================
+   ADD SCHEDULE
+========================================================= */
+
+async function addSchedule() {
+
+    const schedule = {
+
+        scheduleId:
+            getVal("scheduleId"),
+
+        routeId:
+            getVal("scheduleRouteId"),
+
+        sourceName:
+            getVal("sourceName"),
+
+        destinationName:
+            getVal("destinationName"),
+
+        departureTimes:
+            getDepartureTimes(),
+
+        arrivalTimes:
+            getArrivalTimes(),
+
+        operatingDays:
+            getOperatingDays()
+
+    };
+
+
+    if (!schedule.scheduleId) {
+
+        showError(
+            "Enter Schedule ID"
+        );
+
+        return;
+    }
+
+
+    if (!schedule.routeId) {
+
+        showError(
+            "Select Route"
+        );
+
+        return;
+    }
+
+
+    if (
+        !schedule.departureTimes.length
+    ) {
+
+        showError(
+            "Add at least one departure time"
+        );
+
+        return;
+    }
+
+
+    if (
+        !schedule.arrivalTimes.length
+    ) {
+
+        showError(
+            "Add at least one arrival time"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        await apiRequest(
+            `${API}/schedule`,
+            {
+                method: "POST",
+                body:
+                    JSON.stringify(
+                        schedule
+                    )
+            }
+        );
+
+
+        showMessage(
+            "Schedule added successfully"
+        );
+
+
+        clearSchedule();
+
+        loadSchedules();
+
+    } catch (error) {
+
+        showError(
+            error.message
+        );
+
+    }
+}
+
+
+/* =========================================================
+   UPDATE SCHEDULE
+========================================================= */
+
+async function updateSchedule() {
+
+    const schedule = {
+
+        scheduleId:
+            getVal("scheduleId"),
+
+        routeId:
+            getVal("scheduleRouteId"),
+
+        sourceName:
+            getVal("sourceName"),
+
+        destinationName:
+            getVal("destinationName"),
+
+        departureTimes:
+            getDepartureTimes(),
+
+        arrivalTimes:
+            getArrivalTimes(),
+
+        operatingDays:
+            getOperatingDays()
+
+    };
+
+
+    if (!schedule.scheduleId) {
+
+        showError(
+            "Enter Schedule ID"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        await apiRequest(
+            `${API}/schedule`,
+            {
+                method: "PUT",
+                body:
+                    JSON.stringify(
+                        schedule
+                    )
+            }
+        );
+
+
+        showMessage(
+            "Schedule updated successfully"
+        );
+
+
+        clearSchedule();
+
+        loadSchedules();
+
+    } catch (error) {
+
+        showError(
+            error.message
+        );
+
+    }
+}
+
+
+/* =========================================================
+   EDIT SCHEDULE
+========================================================= */
+
+function editSchedule(id) {
+
+    const schedule =
+        allSchedules.find(
+            s =>
+                s.scheduleId === id
+        );
+
+
+    if (!schedule) {
+
+        showError(
+            "Schedule not found"
+        );
+
+        return;
+    }
+
+
+    setVal(
+        "scheduleId",
+        schedule.scheduleId
+    );
+
+
+    setVal(
+        "scheduleRouteId",
+        schedule.routeId
+    );
+
+
+    loadSourceDestination();
+
+
+    const departureContainer =
+        document.getElementById(
+            "departureTimesContainer"
+        );
+
+
+    departureContainer.innerHTML =
+        "";
+
+
+    if (
+        Array.isArray(
+            schedule.departureTimes
+        ) &&
+        schedule.departureTimes.length
+    ) {
+
+        schedule.departureTimes.forEach(
+            time =>
+                addDepartureTime(time)
+        );
+
+    } else {
+
+        addDepartureTime("");
+
+    }
+
+
+    const arrivalContainer =
+        document.getElementById(
+            "arrivalTimesContainer"
+        );
+
+
+    arrivalContainer.innerHTML =
+        "";
+
+
+    if (
+        Array.isArray(
+            schedule.arrivalTimes
+        ) &&
+        schedule.arrivalTimes.length
+    ) {
+
+        schedule.arrivalTimes.forEach(
+            time =>
+                addArrivalTime(time)
+        );
+
+    } else {
+
+        addArrivalTime("");
+
+    }
+
+
+    setOperatingDays(
+        schedule.operatingDays
+    );
+}
+
+
+/* =========================================================
+   DELETE SCHEDULE
+========================================================= */
+
+async function deleteSchedule() {
+
+    const id =
+        getVal("scheduleId");
+
+
+    if (!id) {
+
+        showError(
+            "Enter Schedule ID"
+        );
+
+        return;
+    }
+
+
+    if (!confirm(
+        `Delete schedule ${id}?`
+    )) {
+
+        return;
+    }
+
+
+    try {
+
+        await apiRequest(
+            `${API}/schedule/${encodeURIComponent(id)}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+
+        showMessage(
+            "Schedule deleted successfully"
+        );
+
+
+        clearSchedule();
+
+        loadSchedules();
+
+    } catch (error) {
+
+        showError(
+            error.message
+        );
+
+    }
+}
+
+
+/* =========================================================
+   CLEAR SCHEDULE
+========================================================= */
+
+function clearSchedule() {
+
+    setVal(
+        "scheduleId",
+        ""
+    );
+
+    setVal(
+        "scheduleRouteId",
+        ""
+    );
+
+    setVal(
+        "sourceName",
+        ""
+    );
+
+    setVal(
+        "destinationName",
+        ""
+    );
+
+
+    const departureContainer =
+        document.getElementById(
+            "departureTimesContainer"
+        );
+
+
+    if (departureContainer) {
+
+        departureContainer.innerHTML = `
+
+            <div class="timeRow">
+
+                <input
+                    type="time"
+                    class="departureTime">
+
+                <button
+                    type="button"
+                    class="btn btnDelete"
+                    onclick="removeDepartureTime(this)">
+                    Remove
+                </button>
+
+            </div>
+
+        `;
+
+    }
+
+
+    const arrivalContainer =
+        document.getElementById(
+            "arrivalTimesContainer"
+        );
+
+
+    if (arrivalContainer) {
+
+        arrivalContainer.innerHTML = `
+
+            <div class="timeRow">
+
+                <input
+                    type="time"
+                    class="arrivalTime">
+
+                <button
+                    type="button"
+                    class="btn btnDelete"
+                    onclick="removeArrivalTime(this)">
+                    Remove
+                </button>
+
+            </div>
+
+        `;
+
+    }
+
+
+    document
+        .querySelectorAll(
+            'input[name="operatingDays"]'
+        )
+        .forEach(
+            checkbox =>
+                checkbox.checked = false
+        );
+}
+
+
+/* =========================================================
+   INITIAL LOAD
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async function() {
+
+        console.log(
+            "Bus Tracking Admin Panel loaded"
+        );
+
+
+        try {
+
+            /*
+             * Load master data first.
+             */
+
+            await loadBuses();
+
+            await loadStops();
+
+            await loadRoutes();
+
+
+            /*
+             * Populate schedule route dropdown.
+             */
+
+            populateScheduleRoutes();
+
+
+            /*
+             * Load RouteStop matrix.
+             */
+
+            await loadRouteStopMatrix();
+
+
+            /*
+             * Load schedules.
+             */
+
+            await loadSchedules();
+
+        } catch (error) {
+
+            console.error(
+                "Initial loading error:",
+                error
             );
 
         }
 
     }
-
-    catch(err){
-
-        console.error(err);
-
-    }
-
-}
-
-const formatTime = (timeStr) => (timeStr.length === 5 ? `${timeStr}:00` : timeStr);
-
-async function addSchedule() {
-  const selectedDays = getSelectedDays();
-
-  if (selectedDays.length === 0) {
-    alert("Please select at least one operating day.");
-    return;
-  }
-
-   const schedule = {
-
-    scheduleId: getVal("scheduleId"),
-
-    busId: getVal("scheduleBusId"),
-
-    routeId: getVal("scheduleRouteId"),
-
-    sourceName: getVal("sourceName"),
-
-    destinationName: getVal("destinationName"),
-
-    departureTime: formatTime(getVal("departureTime")),
-
-    arrivalTime: formatTime(getVal("arrivalTime")),
-
-    operatingDays: selectedDays
-
-};
-
-  try {
-    const res = await fetch(`${API}/schedule`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(schedule)
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(errorText || "Failed to add schedule");
-    }
-
-    alert("Schedule Added Successfully");
-    clearSchedule();
-    loadSchedule();
-  } catch (err) {
-    alert(`Error: ${err.message}`);
-  }
-}
-
-function editSchedule(schedule){
-
-    setVal("scheduleId", schedule.scheduleId);
-
-    setVal("scheduleBusId", schedule.busId);
-
-    setVal("scheduleRouteId", schedule.routeId);
-
-    loadSourceDestination();
-
-    setVal("departureTime", schedule.departureTime);
-
-    setVal("arrivalTime", schedule.arrivalTime);
-
-    setSelectedDays(schedule.operatingDays);
-
-}
-async function updateSchedule() {
-  const selectedDays = getSelectedDays();
-
-  if (selectedDays.length === 0) {
-    alert("Please select at least one operating day.");
-    return;
-  }
-
-  const schedule = {
-
-    scheduleId: getVal("scheduleId"),
-
-    busId: getVal("scheduleBusId"),
-
-    routeId: getVal("scheduleRouteId"),
-
-    sourceName: getVal("sourceName"),
-
-    destinationName: getVal("destinationName"),
-
-    departureTime: formatTime(getVal("departureTime")),
-
-    arrivalTime: formatTime(getVal("arrivalTime")),
-
-    operatingDays: selectedDays
-
-};
-
-  try {
-    const res = await fetch(`${API}/schedule`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(schedule)
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(errorText || "Failed to update schedule");
-    }
-
-    alert("Schedule Updated Successfully");
-    clearSchedule();
-    loadSchedule();
-  } catch (err) {
-    alert(`Error: ${err.message}`);
-  }
-}
-
-async function deleteSchedule() {
-  const id = getVal("scheduleId");
-  if (!id) return alert("Please specify a Schedule ID to delete.");
-
-  try {
-    const res = await fetch(`${API}/schedule/${id}`, { method: "DELETE" });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(errorText || "Failed to delete schedule");
-    }
-
-    alert("Schedule Deleted Successfully");
-    clearSchedule();
-    loadSchedule();
-  } catch (err) {
-    alert(`Error: ${err.message}`);
-  }
-}
-
-function clearSchedule() {
-  setVal("scheduleId", "");
-  setVal("departureTime", "");
-  setVal("arrivalTime", "");
-  setVal("sourceName","");
- setVal("destinationName","");
-
-  const busSelect = document.getElementById("scheduleBusId");
-  if (busSelect) busSelect.selectedIndex = 0;
-
-  const routeSelect = document.getElementById("scheduleRouteId");
-  if (routeSelect) routeSelect.selectedIndex = 0;
-
-  document.querySelectorAll('input[name="operatingDays"]').forEach((cb) => {
-    cb.checked = false;
-  });
-}
-
-/* ===========================
-   INITIAL LOAD
-=========================== */
-
-window.addEventListener("DOMContentLoaded", () => {
-  loadBus();
-  loadRouteDropdownForBus();
-  loadStop();
-  loadRoute();
-  loadStopsForRoute();
-  loadSchedule();
-  loadBusDropdown();
-  loadRouteDropdown();
-});
+);

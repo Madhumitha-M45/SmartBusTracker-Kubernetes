@@ -1,215 +1,203 @@
+
 package simulator;
-
-import service.BusLocationReceiver;
-import model.BusLocation;
-import model.Route;
-import model.RouteStop;
-import model.Schedule;
-import repository.RouteRepository;
-
-import java.time.LocalDate;
+ 
+import model.*;
+ 
 import java.time.LocalTime;
+
 import java.time.format.DateTimeFormatter;
+
 import java.util.List;
+ 
+public class BusSimulator {
+ 
+    private final Trip trip;
 
-public class BusSimulator implements Runnable {
+    private final Bus bus;
 
-    private final BusLocationReceiver receiver;
-    private final Schedule schedule;
     private final Route route;
+ 
+    private double currentSpeedKmh = 40.0;
 
-    private String status;
-    private double distanceCovered;
-    private double speed; // km/h
-    private int currentStopIndex;
-    private double dwellTimerSeconds;
+    private double distanceCoveredKm = 0.0;
 
-    private final int TICK_INTERVAL_MS = 4000;
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private int currentStopIndex = 0;
 
-    public BusSimulator(BusLocationReceiver receiver, RouteRepository routeRepository, Schedule schedule) {
-        this.receiver = receiver;
-        this.schedule = schedule;
-        this.route = routeRepository.getRouteById(schedule.getRouteId());
+    private int stopDwellTicks = 0;
+ 
+    private static final int DWELL_DURATION_TICKS = 3;
+
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+ 
+    public BusSimulator(Trip trip, Bus bus, Route route) {
+
+        this.trip = trip;
+
+        this.bus = bus;
+
+        this.route = route;
+
     }
+ 
+    public void updateState(double timeStepInHours) {
 
-    @Override
-    public void run() {
-        String today = LocalDate.now().getDayOfWeek().name();
+        if (trip.getStatus() == TripStatus.COMPLETED) {
 
-        boolean operatesToday = schedule.getOperatingDays().stream()
-                .anyMatch(day -> day.equalsIgnoreCase(today));
-
-        if (!operatesToday || route == null || route.getRouteStops() == null || route.getRouteStops().isEmpty()) {
             return;
+
         }
+ 
+        // Handle dwell time at stops
 
-        List<RouteStop> routeStops = route.getRouteStops();
-        LocalTime depTime = LocalTime.parse(schedule.getDepartureTime(), TIME_FORMATTER);
-        LocalTime arrTime = LocalTime.parse(schedule.getArrivalTime(), TIME_FORMATTER);
+        if (trip.getStatus() == TripStatus.AT_STOP) {
 
-        double totalRouteDistance = getDistanceFromStartForStop(routeStops.size() - 1, routeStops);
+            stopDwellTicks--;
 
-        long totalJourneyMinutes = java.time.Duration.between(depTime, arrTime).toMinutes();
-        if (totalJourneyMinutes <= 0) totalJourneyMinutes = 1;
-        this.speed = (totalRouteDistance / totalJourneyMinutes) * 60.0;
+            trip.setDwellTimeRemainingTicks(stopDwellTicks);
 
-        reconstructStartupState(LocalTime.now(), depTime, arrTime, routeStops);
+            if (stopDwellTicks <= 0) {
 
-        while (!"COMPLETED".equals(status) && !Thread.currentThread().isInterrupted()) {
-            LocalTime now = LocalTime.now();
-            double deltaTimeHours = TICK_INTERVAL_MS / 3600000.0;
-            double deltaTimeSeconds = TICK_INTERVAL_MS / 1000.0;
+                trip.setStatus(TripStatus.RUNNING);
 
-            switch (status) {
-                case "WAITING":
-                    if (!now.isBefore(depTime)) {
-                        status = "RUNNING";
-                    }
-                    break;
+                bus.setStatus(BusStatus.RUNNING.name());
 
-                case "RUNNING":
-                    if (currentStopIndex >= routeStops.size() - 1) {
-                        status = "COMPLETED";
-                        break;
-                    }
+            } else {
 
-                    distanceCovered += speed * deltaTimeHours;
-                    double nextStopDist = getDistanceFromStartForStop(currentStopIndex + 1, routeStops);
-
-                    if (distanceCovered >= nextStopDist) {
-                        distanceCovered = nextStopDist;
-                        currentStopIndex++;
-
-                        if (currentStopIndex >= routeStops.size() - 1) {
-                            status = "COMPLETED";
-                        } else {
-                            status = "AT_STOP";
-                            dwellTimerSeconds = 30.0;
-                        }
-                    }
-                    break;
-
-                case "AT_STOP":
-                    dwellTimerSeconds -= deltaTimeSeconds;
-                    if (dwellTimerSeconds <= 0) {
-                        status = "RUNNING";
-                    }
-                    break;
-            }
-
-            BusLocation payload = createBusLocationPayload(now, routeStops, totalRouteDistance);
-            System.out.printf(
-                "Bus=%s | Status=%s | Speed=%.2f km/h | Current=%s | Next=%s | Progress=%.2f%%%n",
-                payload.getBusId(),
-                payload.getStatus(),
-                payload.getSpeed(),
-                payload.getCurrentStopId(),
-                payload.getNextStopId(),
-                payload.getProgress()
-            );
-
-            if (receiver != null) {
-                receiver.onReceiveLiveData(payload);
-            }
-
-            if ("COMPLETED".equals(status)) {
-                ScheduleManager.removeFromActiveSchedules(schedule.getScheduleId());
-                break;
-            }
-
-            try {
-                Thread.sleep(TICK_INTERVAL_MS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
-    }
-
-    private void reconstructStartupState(LocalTime now, LocalTime dep, LocalTime arr, List<RouteStop> stops) {
-        if (now.isBefore(dep)) {
-            status = "WAITING";
-            distanceCovered = 0.0;
-            currentStopIndex = 0;
-            return;
-        }
-
-        if (!now.isBefore(arr)) {
-            status = "COMPLETED";
-            distanceCovered = getDistanceFromStartForStop(stops.size() - 1, stops);
-            currentStopIndex = stops.size() - 1;
-            return;
-        }
-
-        long elapsedSeconds = java.time.Duration.between(dep, now).getSeconds();
-        double accumulatedSeconds = 0;
-
-        for (int i = 0; i < stops.size() - 1; i++) {
-            double segmentDist = stops.get(i + 1).getDistanceFromPrevious();
-            double segmentDriveSeconds = (segmentDist / speed) * 3600.0;
-
-            if (elapsedSeconds < accumulatedSeconds + segmentDriveSeconds) {
-                status = "RUNNING";
-                currentStopIndex = i;
-                double secondsInSegment = elapsedSeconds - accumulatedSeconds;
-                distanceCovered = getDistanceFromStartForStop(i, stops) + (speed * (secondsInSegment / 3600.0));
                 return;
+
             }
 
-            accumulatedSeconds += segmentDriveSeconds;
+        }
+ 
+        // Move bus forward
 
-            if (elapsedSeconds < accumulatedSeconds + 30.0) {
-                status = "AT_STOP";
-                currentStopIndex = i + 1;
-                distanceCovered = getDistanceFromStartForStop(i + 1, stops);
-                dwellTimerSeconds = (accumulatedSeconds + 30.0) - elapsedSeconds;
-                return;
-            }
+        double stepDistance = currentSpeedKmh * timeStepInHours;
 
-            accumulatedSeconds += 30.0;
+        distanceCoveredKm += stepDistance;
+
+        trip.setCoveredDistanceKm(distanceCoveredKm);
+ 
+        // Check if full trip is completed
+
+        if (distanceCoveredKm >= trip.getTotalDistanceKm()) {
+
+            distanceCoveredKm = trip.getTotalDistanceKm();
+
+            trip.setCoveredDistanceKm(distanceCoveredKm);
+
+            trip.setStatus(TripStatus.COMPLETED);
+ 
+            bus.setStatus(BusStatus.AVAILABLE.name());
+
+            LocalTime etaArrival = trip.getArrivalTime().plusMinutes(15);
+
+            bus.setAvailableFrom(etaArrival.format(TIME_FORMATTER));
+
+            return;
+
+        }
+ 
+        checkIntermediateStops();
+
+    }
+ 
+    private void checkIntermediateStops() {
+
+        List<RouteStop> stops = route.getRouteStops();
+
+        if (stops == null || currentStopIndex >= stops.size()) {
+
+            return;
+
+        }
+ 
+        double cumulativeTargetDistance = 0.0;
+
+        for (int i = 0; i <= currentStopIndex; i++) {
+
+            cumulativeTargetDistance += stops.get(i).getDistanceFromPrevious();
+
+        }
+ 
+        if (distanceCoveredKm >= cumulativeTargetDistance) {
+
+            trip.setStatus(TripStatus.AT_STOP);
+
+            bus.setStatus(BusStatus.AT_STOP.name());
+
+            stopDwellTicks = DWELL_DURATION_TICKS;
+
+            trip.setDwellTimeRemainingTicks(stopDwellTicks);
+
+            currentStopIndex++;
+
+            trip.setCurrentStopIndex(currentStopIndex);
+
         }
 
-        status = "COMPLETED";
-        distanceCovered = getDistanceFromStartForStop(stops.size() - 1, stops);
-        currentStopIndex = stops.size() - 1;
     }
+ 
+    public BusLocation generateLiveLocation() {
 
-    private double getDistanceFromStartForStop(int index, List<RouteStop> stops) {
-        double total = 0;
-        for (int i = 0; i <= index && i < stops.size(); i++) {
-            total += stops.get(i).getDistanceFromPrevious();
-        }
-        return total;
+        double remaining = Math.max(0.0, trip.getTotalDistanceKm() - distanceCoveredKm);
+
+        double progress = (trip.getTotalDistanceKm() > 0) ? (distanceCoveredKm / trip.getTotalDistanceKm()) * 100.0 : 0.0;
+ 
+        List<RouteStop> stops = route.getRouteStops();
+ 
+        String currentStopName = (stops != null && currentStopIndex > 0 && currentStopIndex <= stops.size())
+
+                ? stops.get(currentStopIndex - 1).getStopName()
+
+                : trip.getOrigin();
+ 
+        String nextStopName = (stops != null && currentStopIndex < stops.size())
+
+                ? stops.get(currentStopIndex).getStopName()
+
+                : trip.getDestination();
+ 
+        return new BusLocation(
+
+                bus.getBusId(),
+
+                currentSpeedKmh,
+
+                "STOP_" + currentStopIndex,
+
+                currentStopName,
+
+                "STOP_" + (currentStopIndex + 1),
+
+                nextStopName,
+
+                LocalTime.now().toString(),
+
+                trip.getScheduleId(),
+
+                trip.getRouteId(),
+
+                trip.getStatus().name(),
+
+                distanceCoveredKm,
+
+                remaining,
+
+                progress,
+
+                0.0,
+
+                trip.getArrivalTime().toString()
+
+        );
+
     }
+ 
+    public Trip getTrip() { return trip; }
 
-    private BusLocation createBusLocationPayload(LocalTime now, List<RouteStop> stops, double totalRouteDistance) {
-        BusLocation data = new BusLocation();
+    public Bus getBus() { return bus; }
 
-        data.setBusId(schedule.getBusId());
-        data.setScheduleId(schedule.getScheduleId());
-        data.setRouteId(schedule.getRouteId());
-        data.setStatus(status);
-        data.setDistanceCovered(distanceCovered);
+    public Route getRoute() { return route; }
 
-        double remaining = totalRouteDistance - distanceCovered;
-        data.setDistanceRemaining(Math.max(0.0, remaining));
-
-        double progress = (totalRouteDistance > 0) ? (distanceCovered / totalRouteDistance) * 100.0 : 0.0;
-        data.setProgress(Math.min(100.0, progress));
-
-        int safeIndex = Math.min(currentStopIndex, stops.size() - 1);
-        data.setCurrentStopId(stops.get(safeIndex).getStopId());
-
-        if (safeIndex < stops.size() - 1) {
-            data.setNextStopId(stops.get(safeIndex + 1).getStopId());
-        } else {
-            data.setNextStopId("DESTINATION_REACHED");
-        }
-
-        data.setSpeed("AT_STOP".equals(status) || "WAITING".equals(status) || "COMPLETED".equals(status) ? 0.0 : speed);
-        data.setLastUpdated(now.toString());
-
-        return data;
-    }
 }
+ 
