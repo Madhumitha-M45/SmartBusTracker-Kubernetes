@@ -5,8 +5,6 @@ import model.*;
  
 import java.time.LocalTime;
 
-import java.time.format.DateTimeFormatter;
-
 import java.util.List;
  
 public class BusSimulator {
@@ -26,8 +24,6 @@ public class BusSimulator {
     private int stopDwellTicks = 0;
  
     private static final int DWELL_DURATION_TICKS = 3;
-
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
  
     public BusSimulator(Trip trip, Bus bus, Route route) {
 
@@ -38,7 +34,26 @@ public class BusSimulator {
         this.route = route;
 
     }
- 
+
+    /**
+     * Task 2: restores the simulator from a previously persisted Trip state so a
+     * restarted simulator resumes from the current position on the route instead of
+     * restarting from the source.
+     */
+    public void restoreState() {
+
+        this.distanceCoveredKm = trip.getCoveredDistanceKm();
+
+        this.currentStopIndex = trip.getCurrentStopIndex();
+
+        this.stopDwellTicks = trip.getDwellTimeRemainingTicks();
+
+        System.out.println("[SIM][RESTORE] Bus " + bus.getBusId() + " resumed Trip " + trip.getTripId()
+                + " at " + String.format("%.2f", distanceCoveredKm) + " km (stop index " + currentStopIndex
+                + ", dwell ticks " + stopDwellTicks + ") on route " + route.getRouteId());
+
+    }
+  
     public void updateState(double timeStepInHours) {
 
         if (trip.getStatus() == TripStatus.COMPLETED) {
@@ -46,7 +61,7 @@ public class BusSimulator {
             return;
 
         }
- 
+  
         // Handle dwell time at stops
 
         if (trip.getStatus() == TripStatus.AT_STOP) {
@@ -61,6 +76,11 @@ public class BusSimulator {
 
                 bus.setStatus(BusStatus.RUNNING.name());
 
+                String stopName = currentStopIndex > 0 ? route.getRouteStops().get(currentStopIndex - 1).getStopName() : "source";
+
+                System.out.println("[SIM] Bus " + bus.getBusId() + " DEPARTED stop '" + stopName + "' - continuing to "
+                        + trip.getDestination() + " on Trip " + trip.getTripId());
+
             } else {
 
                 return;
@@ -68,7 +88,7 @@ public class BusSimulator {
             }
 
         }
- 
+  
         // Move bus forward
 
         double stepDistance = currentSpeedKmh * timeStepInHours;
@@ -76,7 +96,7 @@ public class BusSimulator {
         distanceCoveredKm += stepDistance;
 
         trip.setCoveredDistanceKm(distanceCoveredKm);
- 
+  
         // Check if full trip is completed
 
         if (distanceCoveredKm >= trip.getTotalDistanceKm()) {
@@ -86,21 +106,25 @@ public class BusSimulator {
             trip.setCoveredDistanceKm(distanceCoveredKm);
 
             trip.setStatus(TripStatus.COMPLETED);
- 
+
             bus.setStatus(BusStatus.AVAILABLE.name());
 
-            LocalTime etaArrival = trip.getArrivalTime().plusMinutes(15);
+            // Task 1: bus is now stationed at the destination location,
+            // joining the destination's available-from bus pool.
 
-            bus.setAvailableFrom(etaArrival.format(TIME_FORMATTER));
+            bus.setAvailableFrom(trip.getDestination());
+
+            System.out.println("[SIM] Trip " + trip.getTripId() + " COMPLETED: Bus " + bus.getBusId()
+                    + " reached destination '" + trip.getDestination() + "' and is now AVAILABLE there.");
 
             return;
 
         }
- 
+  
         checkIntermediateStops();
 
     }
- 
+  
     private void checkIntermediateStops() {
 
         List<RouteStop> stops = route.getRouteStops();
@@ -110,7 +134,7 @@ public class BusSimulator {
             return;
 
         }
- 
+  
         double cumulativeTargetDistance = 0.0;
 
         for (int i = 0; i <= currentStopIndex; i++) {
@@ -118,8 +142,10 @@ public class BusSimulator {
             cumulativeTargetDistance += stops.get(i).getDistanceFromPrevious();
 
         }
- 
+  
         if (distanceCoveredKm >= cumulativeTargetDistance) {
+
+            String stopName = stops.get(currentStopIndex).getStopName();
 
             trip.setStatus(TripStatus.AT_STOP);
 
@@ -132,6 +158,9 @@ public class BusSimulator {
             currentStopIndex++;
 
             trip.setCurrentStopIndex(currentStopIndex);
+
+            System.out.println("[SIM] Bus " + bus.getBusId() + " REACHED stop '" + stopName + "' (dwelling for "
+                    + DWELL_DURATION_TICKS + "s) on Trip " + trip.getTripId());
 
         }
 

@@ -26,7 +26,6 @@ public class AdminService {
     private final BusLocationRepository busLocationRepository;
 
     public AdminService() {
-
         busRepository = new BusRepository();
         routeRepository = new RouteRepository();
         routeStopRepository = new RouteStopRepository();
@@ -105,8 +104,14 @@ public class AdminService {
         routeStopRepository.updateRouteStop(routeStop);
     }
 
+    // Deletes all stops belonging to a specific route
     public void deleteRouteStopsByRouteId(String routeId) {
         routeStopRepository.deleteRouteStopsByRouteId(routeId);
+    }
+
+    // NEW METHOD: Deletes a single RouteStop by its ID (routeId_stopId)
+    public void deleteRouteStopById(String id) {
+        routeStopRepository.deleteRouteStopById(id);
     }
 
 

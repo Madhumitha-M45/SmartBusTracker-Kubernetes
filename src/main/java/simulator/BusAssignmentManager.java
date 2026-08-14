@@ -1,5 +1,5 @@
 package simulator;
- 
+
 import model.Bus;
 
 import model.BusStatus;
@@ -7,27 +7,21 @@ import model.BusStatus;
 import model.Trip;
 
 import model.TripStatus;
- 
-import java.time.LocalTime;
-
-import java.time.format.DateTimeFormatter;
-
-import java.time.format.DateTimeParseException;
 
 import java.util.List;
- 
+
+import java.util.Map;
+
 public class BusAssignmentManager {
- 
+
     private final List<Bus> availableBuses;
 
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
- 
     public BusAssignmentManager(List<Bus> availableBuses) {
 
         this.availableBuses = availableBuses;
 
     }
- 
+
     public Bus assignBusForTrip(Trip trip) {
 
         if (trip == null || trip.getStatus() != TripStatus.SCHEDULED) {
@@ -35,30 +29,32 @@ public class BusAssignmentManager {
             return null;
 
         }
- 
-        LocalTime tripDepTime = trip.getDepartureTime();
- 
+
+        String tripOrigin = trip.getOrigin();
+
         for (Bus bus : availableBuses) {
 
             // Check status against BusStatus enum name (e.g. "AVAILABLE")
 
             if (bus.getStatus() != null && bus.getStatus().equalsIgnoreCase(BusStatus.AVAILABLE.name())) {
- 
-                // Check time availability against bus.getAvailableFrom()
 
-                LocalTime busAvailableTime = parseTimeSafely(bus.getAvailableFrom());
+                // A bus is assignable only if it is parked at the trip's origin location
 
-                boolean isTimeReady = (busAvailableTime == null || tripDepTime == null) || !busAvailableTime.isAfter(tripDepTime);
- 
-                if (isTimeReady) {
+                if (isSameLocation(bus.getAvailableFrom(), tripOrigin)) {
 
                     // Assign bus ID to trip
 
                     trip.setAssignedBusId(bus.getBusId());
 
-                    // Update bus status to RUNNING
+                    // Update bus status to RUNNING (removes it from the source location's available pool)
 
                     bus.setStatus(BusStatus.RUNNING.name());
+
+                    System.out.println("[ASSIGN] Bus " + bus.getBusId() + " assigned to Trip " + trip.getTripId()
+                            + " (" + tripOrigin + " -> " + trip.getDestination() + ")"
+                            + " | available-from list at '" + bus.getAvailableFrom() + "' reduced by 1.");
+
+                    printAvailability();
 
                     return bus;
 
@@ -71,50 +67,49 @@ public class BusAssignmentManager {
         return null;
 
     }
- 
+
     /**
-
-     * Safely parses time strings into LocalTime objects.
-
+     * Task 3: prints the current available-from bus counts grouped by location.
      */
+    public void printAvailability() {
 
-    private LocalTime parseTimeSafely(String timeStr) {
+        Map<String, Integer> availabilityByLocation = new java.util.TreeMap<>();
 
-        if (timeStr == null || timeStr.trim().isEmpty()) {
+        for (Bus bus : availableBuses) {
 
-            return null;
+            if (bus.getStatus() != null && bus.getStatus().equalsIgnoreCase(BusStatus.AVAILABLE.name())) {
 
-        }
+                String location = (bus.getAvailableFrom() == null || bus.getAvailableFrom().trim().isEmpty())
+                        ? "UNKNOWN" : bus.getAvailableFrom().trim();
 
-        String cleanStr = timeStr.trim();
- 
-        // Prevents location/text strings from being parsed
-
-        if (!cleanStr.contains(":") && !cleanStr.matches(".*\\d.*")) {
-
-            return null;
-
-        }
- 
-        try {
-
-            return LocalTime.parse(cleanStr, TIME_FORMATTER);
-
-        } catch (DateTimeParseException e) {
-
-            try {
-
-                return LocalTime.parse(cleanStr);
-
-            } catch (DateTimeParseException ex) {
-
-                return null;
+                availabilityByLocation.put(location, availabilityByLocation.getOrDefault(location, 0) + 1);
 
             }
 
         }
 
+        System.out.println("[AVAILABILITY] Available buses by location: " + availabilityByLocation);
+
+    }
+
+    /**
+     * Treats two location strings as the same place when they match case-insensitively
+     * or one contains the other (e.g. "Tirunelveli" vs "Tirunelveli New Bus Stand").
+     */
+    private boolean isSameLocation(String locationA, String locationB) {
+
+        if (locationA == null || locationB == null) {
+
+            return false;
+
+        }
+
+        String a = locationA.trim().toLowerCase();
+
+        String b = locationB.trim().toLowerCase();
+
+        return !a.isEmpty() && (a.equals(b) || a.contains(b) || b.contains(a));
+
     }
 
 }
- 

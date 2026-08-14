@@ -1891,199 +1891,68 @@ function getRouteStopMatrixData() {
 
 async function saveAllRouteStops() {
 
-    const data =
-        getRouteStopMatrixData();
-
-
-    const selected =
-        data.filter(
-            item =>
-                item.selected
-        );
-
+    const data = getRouteStopMatrixData();
+    const selected = data.filter(item => item.selected);
 
     if (!selected.length) {
-
-        showError(
-            "Select at least one stop"
-        );
-
+        showError("Select at least one stop");
         return;
     }
 
-
-    /*
-     * Validate selected rows.
-     */
-
-    for (
-        const item of selected
-    ) {
-
-        if (
-            !item.stopOrder ||
-            item.stopOrder < 1
-        ) {
-
-            showError(
-                `Enter Stop Order for ${item.routeId} - ${item.stopId}`
-            );
-
+    // Validate selected rows
+    for (const item of selected) {
+        if (!item.stopOrder || item.stopOrder < 1) {
+            showError(`Enter Stop Order for ${item.routeId} - ${item.stopId}`);
             return;
         }
 
-
-        if (
-            item.distanceFromPrevious < 0
-        ) {
-
-            showError(
-                `Invalid distance for ${item.routeId} - ${item.stopId}`
-            );
-
+        if (item.distanceFromPrevious < 0) {
+            showError(`Invalid distance for ${item.routeId} - ${item.stopId}`);
             return;
         }
-
     }
 
-
     try {
+        allRouteStops = await apiRequest(`${API}/route-stop`) || [];
 
-        /*
-         * First load latest RouteStops.
-         */
-
-        allRouteStops =
-            await apiRequest(
-                `${API}/route-stop`
-            ) || [];
-
-
-        /*
-         * Process every matrix row.
-         */
-
-        for (
-            const item of data
-        ) {
-
-            const existing =
-                findRouteStop(
-                    item.routeId,
-                    item.stopId
-                );
-
-
-            /*
-             * CHECKED
-             *
-             * Create or update.
-             */
+        for (const item of data) {
+            const existing = findRouteStop(item.routeId, item.stopId);
 
             if (item.selected) {
-
-                const stop =
-                    allStops.find(
-                        s =>
-                            String(
-                                s.stopId
-                            ) ===
-                            String(
-                                item.stopId
-                            )
-                    );
-
+                const stop = allStops.find(s => String(s.stopId) === String(item.stopId));
 
                 const routeStop = {
-
-                    id:
-                        `${item.routeId}_${item.stopId}`,
-
-                    routeId:
-                        item.routeId,
-
-                    stopId:
-                        item.stopId,
-
-                    stopName:
-                        stop
-                            ? stop.stopName
-                            : "",
-
-                    stopOrder:
-                        item.stopOrder,
-
-                    distanceFromPrevious:
-                        item.distanceFromPrevious
-
+                    id: `${item.routeId}_${item.stopId}`,
+                    routeId: item.routeId,
+                    stopId: item.stopId,
+                    stopName: stop ? stop.stopName : "",
+                    stopOrder: item.stopOrder,
+                    distanceFromPrevious: item.distanceFromPrevious
                 };
 
-
                 if (existing) {
-
-                    /*
-                     * UPDATE
-                     */
-
-                    await apiRequest(
-                        `${API}/route-stop`,
-                        {
-                            method: "PUT",
-                            body:
-                                JSON.stringify(
-                                    routeStop
-                                )
-                        }
-                    );
-
+                    // UPDATE
+                    await apiRequest(`${API}/route-stop`, {
+                        method: "PUT",
+                        body: JSON.stringify(routeStop)
+                    });
                 } else {
-
-                    /*
-                     * INSERT
-                     */
-
-                    await apiRequest(
-                        `${API}/route-stop`,
-                        {
-                            method: "POST",
-                            body:
-                                JSON.stringify(
-                                    routeStop
-                                )
-                        }
-                    );
-
+                    // INSERT
+                    await apiRequest(`${API}/route-stop`, {
+                        method: "POST",
+                        body: JSON.stringify(routeStop)
+                    });
                 }
-
             }
-
         }
 
-
-        /*
-         * Reload after save.
-         */
-
-        allRouteStops =
-            await apiRequest(
-                `${API}/route-stop`
-            ) || [];
-
-
+        // Reload matrix after saving
+        allRouteStops = await apiRequest(`${API}/route-stop`) || [];
         renderRouteStopMatrix();
-
-
-        showMessage(
-            "Route stops saved successfully"
-        );
+        showMessage("Route stops saved successfully");
 
     } catch (error) {
-
-        showError(
-            "Unable to save route stops: " +
-            error.message
-        );
-
+        showError("Unable to save route stops: " + error.message);
     }
 }
 

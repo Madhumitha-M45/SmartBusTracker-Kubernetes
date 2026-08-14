@@ -57,6 +57,29 @@ public class AppStartupListener implements ServletContextListener {
         List<Schedule> schedules = scheduleRepository.getAllSchedules();
 
         List<Route> routes = routeRepository.getAllRoutes();
+
+        // Task 1: migrate legacy "availableFrom" values. It now stores the LOCATION where
+        // the bus is parked (e.g. "Tirunelveli"). Old time values (e.g. "02:27") or blanks
+        // default to the depot location "Tirunelveli" so buses can be assigned.
+
+        for (Bus bus : busInventory) {
+
+            String location = bus.getAvailableFrom();
+
+            boolean isLegacyTime = location != null && location.matches("\\d{1,2}:\\d{2}");
+
+            if (location == null || location.trim().isEmpty() || isLegacyTime) {
+
+                System.out.println("[MIGRATE] Bus " + bus.getBusId() + ": availableFrom '" + location
+                        + "' -> 'Tirunelveli' (default depot location)");
+
+                bus.setAvailableFrom("Tirunelveli");
+
+                busRepository.updateBus(bus);
+
+            }
+
+        }
  
         // Safe Stream Mapping: Filters null/empty routeIds and handles duplicates gracefully
 

@@ -131,4 +131,19 @@ public class RouteStopRepository {
                 eq("routeId", routeId)
         );
     }
+
+    // =========================================================
+    // DELETE ROUTE STOP BY ID
+    // =========================================================
+
+    public void deleteRouteStopById(String id) {
+
+        if (id == null || id.trim().isEmpty()) {
+            return;
+        }
+
+        collection.deleteOne(
+                eq("_id", id)
+        );
+    }
 }

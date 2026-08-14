@@ -63,9 +63,19 @@ public class AdminResource {
             @PathParam("busId") String busId) {
         try {
             adminService.deleteBus(busId);
-            return Response.ok( "Bus Deleted Successfully" ).build();
+            return Response.ok("Bus Deleted Successfully").build();
         } catch (IllegalArgumentException e) {
-            return Response.status( Response.Status.BAD_REQUEST ).entity(e.getMessage()).build();
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+    @DELETE
+    @Path("/route-stop/{id}")
+    public Response deleteRouteStop(@PathParam("id") String id) {
+        try {
+            adminService.deleteRouteStopById(id); // Implement single deletion in AdminService
+            return Response.ok("Route Stop Deleted Successfully").build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }
     @GET
@@ -313,7 +323,7 @@ public class AdminResource {
     }
 
     @DELETE
-    @Path("/route-stop/{routeId}")
+    @Path("/route-stop/route/{routeId}")
     public Response deleteRouteStops(
             @PathParam("routeId") String routeId) {
 

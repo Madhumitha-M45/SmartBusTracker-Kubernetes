@@ -359,7 +359,7 @@
             </div>
 
             <div class="formGroup">
-                <label>Available From</label>
+                <label>Available From (Location)</label>
                 <input type="text" id="availableFrom">
             </div>
 
@@ -382,7 +382,7 @@
                         <th>Bus Name</th>
                         <th>Bus Type</th>
                         <th>Status</th>
-                        <th>Available From</th>
+                        <th>Available From (Location)</th>
                         <th>Action</th>
                     </tr>
                 </thead>
