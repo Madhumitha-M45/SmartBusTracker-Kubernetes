@@ -17,6 +17,7 @@
         <jersey.version>3.1.5</jersey.version>
         <jackson.version>2.19.2</jackson.version>
         <mongodb.version>5.5.1</mongodb.version>
+        <jaxb.version>4.0.2</jaxb.version>
     </properties>
 
     <dependencies>
@@ -46,6 +47,20 @@
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-json-jackson</artifactId>
             <version>${jersey.version}</version>
+        </dependency>
+
+        <!-- JAXB (Resolves WADL / JAXBContext missing warning) -->
+        <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>4.0.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+            <version>${jaxb.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- Jackson -->
@@ -99,6 +114,13 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>2.0.17</version>
+        </dependency>
+
+        <!-- Firebase Admin SDK -->
+        <dependency>
+            <groupId>com.google.firebase</groupId>
+            <artifactId>firebase-admin</artifactId>
+            <version>9.7.0</version>
         </dependency>
 
     </dependencies>
