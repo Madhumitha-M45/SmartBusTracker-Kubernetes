@@ -16,17 +16,15 @@ public class BusRepository {
         collection.insertOne(bus);
     }
     public List<Bus> getAllBuses() {
-        List<Bus> busList = new ArrayList<>();
-        collection.find().into(busList);
-        return busList;
+        return collection.find().into(new ArrayList<>());
     }
     public Bus getBusById(String busId) {
         return collection.find(eq("_id", busId)).first();
     }
     public boolean updateBus(Bus bus) {
-        return collection.replaceOne(eq("_id", bus.getBusId()), bus).getModifiedCount() > 0;
+        return collection.replaceOne(eq("_id", bus.getBusId()), bus).getMatchedCount() > 0;
     }
     public boolean deleteBus(String busId) {
-        return collection.deleteOne(eq("_id", busId)).getDeletedCount() > 0;
+        return collection .deleteOne(eq("_id", busId)) .getDeletedCount() > 0;
     }
 }

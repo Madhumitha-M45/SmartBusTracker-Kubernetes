@@ -1,32 +1,30 @@
 package repository;
-import static com.mongodb.client.model.Filters.eq;
 import java.util.ArrayList;
 import java.util.List;
+import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import config.MongoDBConfig;
 import model.Route;
 public class RouteRepository {
-    private MongoCollection<Route> collection;
+    private final MongoCollection<Route> collection;
     public RouteRepository() {
         MongoDatabase database = MongoDBConfig.getDatabase();
-        collection = database.getCollection(MongoDBConfig.COLLECTION_ROUTES, Route.class);
+        collection = database.getCollection("Route", Route.class);
     }
     public void addRoute(Route route) {
         collection.insertOne(route);
     }
     public List<Route> getAllRoutes() {
-        List<Route> routes = new ArrayList<>();
-        collection.find().into(routes);
-        return routes;
+        return collection.find().into(new ArrayList<>());
     }
     public Route getRouteById(String routeId) {
-        return collection.find(eq("routeId", routeId)).first();
+        return collection.find(eq("_id", routeId)).first();
     }
-    public void updateRoute(Route route) {
-        collection.replaceOne( eq("routeId", route.getRouteId()),route);
+    public boolean updateRoute(Route route) {
+        return collection.replaceOne(eq("_id", route.getRouteId()), route).getMatchedCount() > 0;
     }
-    public void deleteRoute(String routeId) {
-        collection.deleteOne(eq("routeId", routeId));
+    public boolean deleteRoute(String routeId) {
+        return collection.deleteOne(eq("_id", routeId)).getDeletedCount() > 0;
     }
 }
