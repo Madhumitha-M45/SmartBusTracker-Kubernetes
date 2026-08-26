@@ -1,6 +1,4 @@
 package repository;
-import java.util.ArrayList;
-import java.util.List;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -11,35 +9,17 @@ public class BusLocationRepository {
     private final MongoCollection<BusLocation> collection;
     public BusLocationRepository() {
         MongoDatabase database = MongoDBConfig.getDatabase();
-        this.collection = database.getCollection("BusLocation", BusLocation.class);
+        collection = database.getCollection("BusLocation",BusLocation.class);
     }
-    public void saveOrUpdateBusLocation(BusLocation busLocation) {
-        if (busLocation == null || busLocation.getBusId() == null || busLocation.getBusId().trim().isEmpty()) {
-            return;
+    public void saveOrUpdateBusLocation(BusLocation location) {
+        if (location == null) {
+            throw new IllegalArgumentException( "BusLocation cannot be null");
         }
-        collection.replaceOne(eq("busId", busLocation.getBusId()),busLocation,new ReplaceOptions().upsert(true));
-    }
-    public void addBusLocation(BusLocation busLocation) {
-        saveOrUpdateBusLocation(busLocation);
-    }
-    public List<BusLocation> getAllBusLocations() {
-        List<BusLocation> locationList = new ArrayList<>();
-        collection.find().into(locationList);
-        return locationList;
-    }
-    public BusLocation getBusLocationByBusId(String busId) {
-        if (busId == null || busId.trim().isEmpty()) {
-            return null;
+        if (location.getBusId() == null ||location.getBusId().trim().isEmpty()) {
+            throw new IllegalArgumentException( "Bus ID is required");
         }
-        return collection.find(eq("busId", busId)).first();
-    }
-    public void updateBusLocation(BusLocation busLocation) {
-        saveOrUpdateBusLocation(busLocation);
-    }
-    public void deleteBusLocation(String busId) {
-        if (busId == null || busId.trim().isEmpty()) {
-            return;
-        }
-        collection.deleteOne(eq("busId", busId));
+        collection.replaceOne(
+                eq("busId", location.getBusId()),
+                location,new ReplaceOptions().upsert(true));
     }
 }

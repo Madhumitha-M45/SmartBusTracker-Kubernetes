@@ -4,220 +4,233 @@ import java.util.List;
 
 public class ETAResponse {
 
-    private String busId;
-    private String busNumber;
-    private String status;
-    private String statusBanner;
+	private String busId;
+	private String busNumber;
+	private String status;
+	private String statusBanner;
+	private double speed;
+	private String currentStop;
+	private String nextStop;
+	private double distanceToNextStop;
+	private String boardingStop;
+	private double remainingDistanceToBoardingStop;
+	private String boardingEta;
+	private String boardingArrival;
+	private String destinationStop;
+	private double destinationRemainingDistance;
+	private String destinationEta;
+	private String destinationArrival;
+	private String startingFrom;
+	private String departureTime;
+	private double latitude;
+	private double longitude;
+	private String lastUpdated;
+	private List<RouteStopDetailDTO> routeStops;
 
-    private double speed;
+	public ETAResponse(String busId, String busNumber, String status, String statusBanner, double speed,
+			String currentStop, String nextStop, double distanceToNextStop, String boardingStop,
+			double remainingDistanceToBoardingStop, String boardingEta, String boardingArrival, String destinationStop,
+			double destinationRemainingDistance, String destinationEta, String destinationArrival, String startingFrom,
+			String departureTime, double latitude, double longitude, String lastUpdated,
+			List<RouteStopDetailDTO> routeStops) {
 
-    private String currentStop;
-    private String nextStop;
+		this.busId = busId;
+		this.busNumber = busNumber;
+		this.status = status;
+		this.statusBanner = statusBanner;
+		this.speed = speed;
+		this.currentStop = currentStop;
+		this.nextStop = nextStop;
+		this.distanceToNextStop = distanceToNextStop;
+		this.boardingStop = boardingStop;
+		this.remainingDistanceToBoardingStop = remainingDistanceToBoardingStop;
+		this.boardingEta = boardingEta;
+		this.boardingArrival = boardingArrival;
+		this.destinationStop = destinationStop;
+		this.destinationRemainingDistance = destinationRemainingDistance;
+		this.destinationEta = destinationEta;
+		this.destinationArrival = destinationArrival;
+		this.startingFrom = startingFrom;
+		this.departureTime = departureTime;
+		this.latitude = latitude;
+		this.longitude = longitude;
+		this.lastUpdated = lastUpdated;
+		this.routeStops = routeStops;
+	}
 
-    private double distanceToNextStop;
+	public String getBusId() {
+		return busId;
+	}
 
-    private String boardingStop;
-    private double remainingDistanceToBoardingStop;
-    private String boardingEta;
-    private String boardingArrival;
+	public void setBusId(String busId) {
+		this.busId = busId;
+	}
 
-    private String destinationStop;
-    private double destinationRemainingDistance;
-    private String destinationEta;
-    private String destinationArrival;
+	public String getBusNumber() {
+		return busNumber;
+	}
 
-    private String startingFrom;
-    private String departureTime;
+	public void setBusNumber(String busNumber) {
+		this.busNumber = busNumber;
+	}
 
-    private double latitude;
-    private double longitude;
+	public String getStatus() {
+		return status;
+	}
 
-    private String lastUpdated;
+	public void setStatus(String status) {
+		this.status = status;
+	}
 
-    private List<RouteStopDetailDTO> routeStops;
+	public String getStatusBanner() {
+		return statusBanner;
+	}
 
-    public ETAResponse() {
-    }
+	public void setStatusBanner(String statusBanner) {
+		this.statusBanner = statusBanner;
+	}
 
-    public String getBusId() {
-        return busId;
-    }
+	public double getSpeed() {
+		return speed;
+	}
 
-    public void setBusId(String busId) {
-        this.busId = busId;
-    }
+	public void setSpeed(double speed) {
+		this.speed = speed;
+	}
 
-    public String getBusNumber() {
-        return busNumber;
-    }
+	public String getCurrentStop() {
+		return currentStop;
+	}
 
-    public void setBusNumber(String busNumber) {
-        this.busNumber = busNumber;
-    }
+	public void setCurrentStop(String currentStop) {
+		this.currentStop = currentStop;
+	}
 
-    public String getStatus() {
-        return status;
-    }
+	public String getNextStop() {
+		return nextStop;
+	}
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
+	public void setNextStop(String nextStop) {
+		this.nextStop = nextStop;
+	}
 
-    public String getStatusBanner() {
-        return statusBanner;
-    }
+	public double getDistanceToNextStop() {
+		return distanceToNextStop;
+	}
 
-    public void setStatusBanner(String statusBanner) {
-        this.statusBanner = statusBanner;
-    }
+	public void setDistanceToNextStop(double distanceToNextStop) {
+		this.distanceToNextStop = distanceToNextStop;
+	}
 
-    public double getSpeed() {
-        return speed;
-    }
+	public String getBoardingStop() {
+		return boardingStop;
+	}
 
-    public void setSpeed(double speed) {
-        this.speed = speed;
-    }
+	public void setBoardingStop(String boardingStop) {
+		this.boardingStop = boardingStop;
+	}
 
-    public String getCurrentStop() {
-        return currentStop;
-    }
+	public double getRemainingDistanceToBoardingStop() {
+		return remainingDistanceToBoardingStop;
+	}
 
-    public void setCurrentStop(String currentStop) {
-        this.currentStop = currentStop;
-    }
+	public void setRemainingDistanceToBoardingStop(double remainingDistanceToBoardingStop) {
+		this.remainingDistanceToBoardingStop = remainingDistanceToBoardingStop;
+	}
 
-    public String getNextStop() {
-        return nextStop;
-    }
+	public String getBoardingEta() {
+		return boardingEta;
+	}
 
-    public void setNextStop(String nextStop) {
-        this.nextStop = nextStop;
-    }
+	public void setBoardingEta(String boardingEta) {
+		this.boardingEta = boardingEta;
+	}
 
-    public double getDistanceToNextStop() {
-        return distanceToNextStop;
-    }
+	public String getBoardingArrival() {
+		return boardingArrival;
+	}
 
-    public void setDistanceToNextStop(double distanceToNextStop) {
-        this.distanceToNextStop = distanceToNextStop;
-    }
+	public void setBoardingArrival(String boardingArrival) {
+		this.boardingArrival = boardingArrival;
+	}
 
-    public String getBoardingStop() {
-        return boardingStop;
-    }
+	public String getDestinationStop() {
+		return destinationStop;
+	}
 
-    public void setBoardingStop(String boardingStop) {
-        this.boardingStop = boardingStop;
-    }
+	public void setDestinationStop(String destinationStop) {
+		this.destinationStop = destinationStop;
+	}
 
-    public double getRemainingDistanceToBoardingStop() {
-        return remainingDistanceToBoardingStop;
-    }
+	public double getDestinationRemainingDistance() {
+		return destinationRemainingDistance;
+	}
 
-    public void setRemainingDistanceToBoardingStop(
-            double remainingDistanceToBoardingStop) {
+	public void setDestinationRemainingDistance(double destinationRemainingDistance) {
+		this.destinationRemainingDistance = destinationRemainingDistance;
+	}
 
-        this.remainingDistanceToBoardingStop =
-                remainingDistanceToBoardingStop;
-    }
+	public String getDestinationEta() {
+		return destinationEta;
+	}
 
-    public String getBoardingEta() {
-        return boardingEta;
-    }
+	public void setDestinationEta(String destinationEta) {
+		this.destinationEta = destinationEta;
+	}
 
-    public void setBoardingEta(String boardingEta) {
-        this.boardingEta = boardingEta;
-    }
+	public String getDestinationArrival() {
+		return destinationArrival;
+	}
 
-    public String getBoardingArrival() {
-        return boardingArrival;
-    }
+	public void setDestinationArrival(String destinationArrival) {
+		this.destinationArrival = destinationArrival;
+	}
 
-    public void setBoardingArrival(String boardingArrival) {
-        this.boardingArrival = boardingArrival;
-    }
+	public String getStartingFrom() {
+		return startingFrom;
+	}
 
-    public String getDestinationStop() {
-        return destinationStop;
-    }
+	public void setStartingFrom(String startingFrom) {
+		this.startingFrom = startingFrom;
+	}
 
-    public void setDestinationStop(String destinationStop) {
-        this.destinationStop = destinationStop;
-    }
+	public String getDepartureTime() {
+		return departureTime;
+	}
 
-    public double getDestinationRemainingDistance() {
-        return destinationRemainingDistance;
-    }
+	public void setDepartureTime(String departureTime) {
+		this.departureTime = departureTime;
+	}
 
-    public void setDestinationRemainingDistance(
-            double destinationRemainingDistance) {
+	public double getLatitude() {
+		return latitude;
+	}
 
-        this.destinationRemainingDistance =
-                destinationRemainingDistance;
-    }
+	public void setLatitude(double latitude) {
+		this.latitude = latitude;
+	}
 
-    public String getDestinationEta() {
-        return destinationEta;
-    }
+	public double getLongitude() {
+		return longitude;
+	}
 
-    public void setDestinationEta(String destinationEta) {
-        this.destinationEta = destinationEta;
-    }
+	public void setLongitude(double longitude) {
+		this.longitude = longitude;
+	}
 
-    public String getDestinationArrival() {
-        return destinationArrival;
-    }
+	public String getLastUpdated() {
+		return lastUpdated;
+	}
 
-    public void setDestinationArrival(String destinationArrival) {
-        this.destinationArrival = destinationArrival;
-    }
+	public void setLastUpdated(String lastUpdated) {
+		this.lastUpdated = lastUpdated;
+	}
 
-    public String getStartingFrom() {
-        return startingFrom;
-    }
+	public List<RouteStopDetailDTO> getRouteStops() {
+		return routeStops;
+	}
 
-    public void setStartingFrom(String startingFrom) {
-        this.startingFrom = startingFrom;
-    }
-
-    public String getDepartureTime() {
-        return departureTime;
-    }
-
-    public void setDepartureTime(String departureTime) {
-        this.departureTime = departureTime;
-    }
-
-    public double getLatitude() {
-        return latitude;
-    }
-
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
-    }
-
-    public double getLongitude() {
-        return longitude;
-    }
-
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
-    }
-
-    public String getLastUpdated() {
-        return lastUpdated;
-    }
-
-    public void setLastUpdated(String lastUpdated) {
-        this.lastUpdated = lastUpdated;
-    }
-
-    public List<RouteStopDetailDTO> getRouteStops() {
-        return routeStops;
-    }
-
-    public void setRouteStops(List<RouteStopDetailDTO> routeStops) {
-        this.routeStops = routeStops;
-    }
+	public void setRouteStops(List<RouteStopDetailDTO> routeStops) {
+		this.routeStops = routeStops;
+	}
 }

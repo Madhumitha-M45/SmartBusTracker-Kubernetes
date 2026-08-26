@@ -3,109 +3,70 @@ package service;
 import java.util.List;
 
 import model.DeviceToken;
-import repository.DeviceTokenRepository;
 
+import repository.DeviceTokenRepository;
+ 
 public class BusNotificationService {
 
-    private final DeviceTokenRepository deviceTokenRepository;
-    private final FCMNotificationService fcmNotificationService;
+    private final DeviceTokenRepository repository = new DeviceTokenRepository();
 
-    public BusNotificationService() {
-        this.deviceTokenRepository = new DeviceTokenRepository();
-        this.fcmNotificationService = new FCMNotificationService();
-    }
+    private final FCMNotificationService fcmService = new FCMNotificationService();
 
     public List<DeviceToken> getActiveSubscribers(String busId) {
-        if (busId == null || busId.trim().isEmpty()) {
-            return List.of();
-        }
 
-        return deviceTokenRepository.findByBusIdAndActive(
-                busId.trim(),
-                true
-        );
+        return repository.findActiveByBus(busId);
+
     }
 
-    public void notifyBusPassengers(
-            String busId,
-            String title,
-            String message) {
+    public void notifyBusPassengers(String busId, String title, String message) {
 
         List<DeviceToken> subscribers = getActiveSubscribers(busId);
 
-        if (subscribers == null || subscribers.isEmpty()) {
-            System.out.println("[FCM] No active subscribers found for bus: " + busId);
+        if (subscribers.isEmpty()) {
+
+            System.out.println("[FCM] No active subscribers for bus: " + busId);
+
             return;
+
         }
 
-        System.out.println("[FCM] Active subscribers found: " + subscribers.size());
+        System.out.println("[FCM] Sending to " + subscribers.size() + " subscribers.");
 
         for (DeviceToken subscriber : subscribers) {
-            if (subscriber == null) {
-                continue;
-            }
 
-            String deviceToken = subscriber.getDeviceToken();
+            sendSingleNotification(subscriber.getDeviceToken(), title, message, busId);
 
-            if (deviceToken == null || deviceToken.trim().isEmpty()) {
-                System.out.println("[FCM] Skipping subscriber with empty token");
-                continue;
-            }
-
-            sendSingleNotification(deviceToken, title, message, busId);
         }
+
     }
 
-    public boolean sendSingleNotification(
-            String deviceToken,
-            String title,
-            String message,
-            String busId) {
+    public boolean sendSingleNotification(String deviceToken, String title, String message, String busId) {
 
-        System.out.println("---------------------------------");
-        System.out.println("[FCM] Preparing notification");
-        System.out.println("[FCM] Bus ID       : " + busId);
-        System.out.println("[FCM] Device Token : " + deviceToken);
-        System.out.println("[FCM] Title        : " + title);
-        System.out.println("[FCM] Message      : " + message);
+        System.out.println("[FCM] Sending to Bus: " + busId + " | Token: " + deviceToken);   
 
-        if (deviceToken == null || deviceToken.trim().isEmpty()) {
-            System.err.println("[FCM] Device token is empty");
-            return false;
-        }
-
-        boolean sent =
-                fcmNotificationService.sendNotification(
-                        deviceToken.trim(),
-                        title,
-                        message
-                );
+        boolean sent = fcmService.sendNotification(deviceToken, title, message);
 
         if (sent) {
-            System.out.println("[FCM] Notification sent successfully");
-        } else {
-            System.err.println("[FCM] Notification failed");
-        }
 
-        System.out.println("---------------------------------");
+            System.out.println("[FCM] Notification sent successfully.");
+
+        } else {
+
+            System.out.println("[FCM] Notification failed to send.");
+
+        }
 
         return sent;
+
     }
 
-    public void unsubscribeFromBus(
-            String deviceToken,
-            String busId) {
+    public void unsubscribeFromBus(String deviceToken, String busId) {
 
-        if (deviceToken == null || busId == null) {
-            return;
-        }
+        repository.deactivateToken(deviceToken, busId);
 
-        System.out.println(
-                "[FCM] Deactivating subscription"
-                        + " | Token: " + deviceToken
-                        + " | Bus: " + busId
-        );
+        System.out.println("[FCM] Subscription deactivated for Bus: " + busId);
 
-        deviceTokenRepository.deactivateToken(deviceToken, busId);
     }
+
 }
+ 

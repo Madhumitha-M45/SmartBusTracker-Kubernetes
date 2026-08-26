@@ -1,107 +1,59 @@
 package service;
-
-import java.util.List;
+ 
+import java.util.concurrent.ExecutorService;
 
 import dto.ETAResponse;
+
 import model.DeviceToken;
 
+ 
 public class NotificationScheduler {
+ 
+    private final ETAService etaService = new ETAService();
 
-    private final ETAService etaService =
-            new ETAService();
+    private final BusNotificationService busNotificationService = new BusNotificationService();
 
-    private final BusNotificationService busNotificationService =
-            new BusNotificationService();
+    private final ETANotificationService etaNotificationService = new ETANotificationService();
+ 
+    public void processActiveBusNotifications(ExecutorService workerPool) {
 
-    private final ETANotificationService etaNotificationService =
-            new ETANotificationService();
+        for (String busId : etaService.getActiveBusIds()) {
 
-    public void processActiveBusNotifications() {
-        System.out.println("[NOTIFICATION-SCHEDULER] Checking active buses...");
+            for (DeviceToken subscriber : busNotificationService.getActiveSubscribers(busId)) {
 
-        List<String> activeBusIds = etaService.getActiveBusIds();
+                workerPool.submit(() -> processSubscriber(busId, subscriber));
 
-        if (activeBusIds == null || activeBusIds.isEmpty()) {
-            System.out.println("[NOTIFICATION-SCHEDULER] No active buses found.");
-            return;
+            }
+
         }
 
-        System.out.println("[NOTIFICATION-SCHEDULER] Active buses: " + activeBusIds);
-
-        for (String busId : activeBusIds) {
-            if (busId == null || busId.trim().isEmpty()) {
-                continue;
-            }
-
-            System.out.println("[NOTIFICATION-SCHEDULER] Processing Bus: " + busId);
-
-            List<DeviceToken> subscribers =
-                    busNotificationService.getActiveSubscribers(busId);
-
-            if (subscribers == null || subscribers.isEmpty()) {
-                System.out.println(
-                        "[NOTIFICATION-SCHEDULER] No subscribers for Bus: " + busId
-                );
-                continue;
-            }
-
-            System.out.println("[NOTIFICATION-SCHEDULER] Subscribers: " + subscribers.size());
-
-            for (DeviceToken subscriber : subscribers) {
-                if (subscriber == null) {
-                    continue;
-                }
-
-                String deviceToken = subscriber.getDeviceToken();
-                String boardingStop = subscriber.getBoardingStopId();
-
-                if (deviceToken == null || deviceToken.trim().isEmpty()) {
-                    System.out.println(
-                            "[NOTIFICATION-SCHEDULER] Empty device token. Skipping."
-                    );
-                    continue;
-                }
-
-                if (boardingStop == null || boardingStop.trim().isEmpty()) {
-                    System.out.println(
-                            "[NOTIFICATION-SCHEDULER] Empty boarding stop. Skipping."
-                    );
-                    continue;
-                }
-
-                System.out.println(
-                        "[NOTIFICATION-SCHEDULER] Calculating ETA"
-                                + " | Bus: " + busId
-                                + " | Stop: " + boardingStop
-                );
-
-                ETAResponse response =
-                        etaService.calculateETAForBusAndStop(busId, boardingStop);
-
-                if (response == null) {
-                    System.out.println(
-                            "[NOTIFICATION-SCHEDULER] No ETA response."
-                    );
-                    continue;
-                }
-
-                System.out.println(
-                        "[NOTIFICATION-SCHEDULER] ETA Response"
-                                + " | Bus: " + response.getBusId()
-                                + " | Status: " + response.getStatus()
-                                + " | ETA: " + response.getBoardingEta()
-                );
-
-                if ("COMPLETED".equalsIgnoreCase(response.getStatus())) {
-                    busNotificationService.unsubscribeFromBus(deviceToken, busId);
-                    continue;
-                }
-
-                etaNotificationService.checkAndSendNotificationForSubscriber(
-                        response,
-                        deviceToken
-                );
-            }
-        }
     }
+ 
+    private void processSubscriber(String busId, DeviceToken subscriber) {
+
+        ETAResponse response = etaService.calculateETAForBusAndStop(busId, subscriber.getBoardingStop());
+
+        if (response == null) {
+
+            return;
+
+        }
+ 
+        String token = subscriber.getDeviceToken();
+ 
+        if ("COMPLETED".equalsIgnoreCase(response.getStatus())) {
+
+            busNotificationService.unsubscribeFromBus(token, busId);
+
+            etaNotificationService.clearSubscriberState(busId, token);
+
+            return;
+
+        }
+ 
+        etaNotificationService.checkAndSendNotificationForSubscriber(response, token);
+
+    }
+
 }
+ 
