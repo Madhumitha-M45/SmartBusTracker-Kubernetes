@@ -16,7 +16,6 @@ import model.Stop;
 import org.bson.conversions.Bson;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
