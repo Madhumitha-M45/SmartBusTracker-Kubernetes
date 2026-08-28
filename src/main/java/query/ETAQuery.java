@@ -1,287 +1,106 @@
 package query;
 
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Sorts;
-
 import config.MongoDBConfig;
-
 import model.BusLocation;
 import model.Route;
 import model.RouteStop;
+import model.Schedule;
 import model.Stop;
-
-import org.bson.conversions.Bson;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class ETAQuery {
 
-	private final MongoDatabase database;
+	private final MongoCollection<Route> routeRepository;
+	private final MongoCollection<RouteStop> routeStopCollection;
+	private final MongoCollection<Stop> stopCollection;
+	private final MongoCollection<BusLocation> busLocationCollection;
+	private final MongoCollection<Schedule> scheduleCollection;
 
 	public ETAQuery() {
-		this.database = MongoDBConfig.getDatabase();
+		MongoDatabase database = MongoDBConfig.getDatabase();
+		routeRepository = database.getCollection("Route", Route.class);
+		routeStopCollection = database.getCollection("RouteStop", RouteStop.class);
+		stopCollection = database.getCollection("Stop", Stop.class);
+		busLocationCollection = database.getCollection("BusLocation", BusLocation.class);
+		scheduleCollection = database.getCollection("Schedule", Schedule.class);
 	}
 
-	/*
-	 * Search stops beginning with the text entered by the user.
-	 */
-	public List<String> searchStops(String searchText) {
+	public List<String> searchStopsByName(String query) {
+		List<String> names = new ArrayList<>();
+		if (query == null || query.trim().isEmpty()) {
 
-		List<String> results = new ArrayList<>();
+			return names;
 
-		if (searchText == null || searchText.trim().isEmpty()) {
-			return results;
 		}
+		Pattern p = Pattern.compile(Pattern.quote(query.trim()),Pattern.CASE_INSENSITIVE);
+		for (Stop s : stopCollection.find(eq("stopName", p))) {
 
-		MongoCollection<Stop> collection = database.getCollection(MongoDBConfig.COLLECTION_STOPS, Stop.class);
+			names.add(s.getStopName());
 
-		String value = searchText.trim();
-
-		Bson filter = Filters.regex("stopName", Pattern.compile("^" + Pattern.quote(value), Pattern.CASE_INSENSITIVE));
-
-		collection.find(filter).limit(10).forEach(stop -> {
-
-			if (stop != null && stop.getStopName() != null && !stop.getStopName().trim().isEmpty()) {
-
-				results.add(stop.getStopName());
-			}
-		});
-
-		return results;
-	}
-
-	/*
-	 * Find stop using stopId.
-	 */
-	public Stop findStopById(String stopId) {
-
-		if (stopId == null || stopId.trim().isEmpty()) {
-			return null;
 		}
-
-		MongoCollection<Stop> collection = database.getCollection(MongoDBConfig.COLLECTION_STOPS, Stop.class);
-
-		return collection.find(Filters.eq("stopId", stopId.trim())).first();
+		return names;
 	}
 
-	/*
-	 * Find stop using exact stop name.
-	 */
-	public Stop findStopByName(String stopName) {
-
-		if (stopName == null || stopName.trim().isEmpty()) {
-			return null;
-		}
-
-		MongoCollection<Stop> collection = database.getCollection(MongoDBConfig.COLLECTION_STOPS, Stop.class);
-
-		String value = stopName.trim();
-
-		Bson filter = Filters.regex("stopName",
-				Pattern.compile("^" + Pattern.quote(value) + "$", Pattern.CASE_INSENSITIVE));
-
-		return collection.find(filter).first();
+	public Stop findStopByName(String name) {
+		return stopCollection.find(eq("stopName", name)).first();
 	}
 
-	/*
-	 * Find an active bus.
-	 */
-	public BusLocation findActiveBusById(String busId) {
-
-		if (busId == null || busId.trim().isEmpty()) {
-			return null;
-		}
-
-		MongoCollection<BusLocation> collection = database.getCollection(MongoDBConfig.COLLECTION_BUS_LOCATIONS,
-				BusLocation.class);
-
-		Bson filter = Filters.and(Filters.eq("busId", busId.trim()),
-				Filters.in("status", "RUNNING", "WAITING", "AT_STOP"));
-
-		return collection.find(filter).first();
+	public Stop findStopById(String id) {
+		return stopCollection.find(eq("stopId", id)).first();
 	}
 
-	/*
-	 * Get all active bus IDs.
-	 */
-	public List<String> findActiveBusIds() {
-
-		List<String> busIds = new ArrayList<>();
-
-		MongoCollection<BusLocation> collection = database.getCollection(MongoDBConfig.COLLECTION_BUS_LOCATIONS,
-				BusLocation.class);
-
-		Bson filter = Filters.in("status", "RUNNING", "WAITING", "AT_STOP");
-
-		collection.find(filter).projection(Projections.include("busId")).forEach(bus -> {
-
-			if (bus != null && bus.getBusId() != null && !bus.getBusId().trim().isEmpty()) {
-
-				busIds.add(bus.getBusId());
-			}
-		});
-
-		return busIds;
-	}
-
-	/*
-	 * Get active buses belonging to a route.
-	 */
-	public List<BusLocation> findActiveBusesByRoute(String routeId) {
-
-		if (routeId == null || routeId.trim().isEmpty()) {
-			return new ArrayList<>();
-		}
-
-		MongoCollection<BusLocation> collection = database.getCollection(MongoDBConfig.COLLECTION_BUS_LOCATIONS,
-				BusLocation.class);
-
-		Bson filter = Filters.and(Filters.eq("routeId", routeId.trim()),
-				Filters.in("status", "RUNNING", "WAITING", "AT_STOP"));
-
-		List<BusLocation> buses = collection.find(filter).into(new ArrayList<>());
-
-		buses.removeIf(bus -> bus == null);
-
-		return buses;
-	}
-
-	/*
-	 * Find route using routeId.
-	 */
 	public Route findRouteById(String routeId) {
-
-		if (routeId == null || routeId.trim().isEmpty()) {
+		if (routeId == null || routeId.trim().isEmpty())
 			return null;
-		}
-
-		MongoCollection<Route> collection = database.getCollection(MongoDBConfig.COLLECTION_ROUTES, Route.class);
-
-		return collection.find(Filters.eq("routeId", routeId.trim())).first();
+		return routeRepository
+				.find(eq("routeId", Pattern.compile("^" + routeId.trim() + "$", Pattern.CASE_INSENSITIVE))).first();
 	}
 
-	/*
-	 * Find the route where:
-	 *
-	 * boarding stop comes before destination stop.
-	 */
-	public String findMatchingRouteId(String boardingStopId, String destinationStopId) {
-
-		if (boardingStopId == null || boardingStopId.trim().isEmpty() || destinationStopId == null
-				|| destinationStopId.trim().isEmpty()) {
-
-			return null;
-		}
-
-		String boardingId = boardingStopId.trim();
-		String destinationId = destinationStopId.trim();
-
-		/*
-		 * Same stop cannot be a valid trip.
-		 */
-		if (boardingId.equalsIgnoreCase(destinationId)) {
-			return null;
-		}
-
-		MongoCollection<RouteStop> collection = database.getCollection(MongoDBConfig.COLLECTION_ROUTE_STOPS,
-				RouteStop.class);
-
-		List<RouteStop> boardingStops = collection.find(Filters.eq("stopId", boardingId)).into(new ArrayList<>());
-
-		if (boardingStops == null || boardingStops.isEmpty()) {
-			return null;
-		}
-
-		/*
-		 * Remove invalid RouteStop records.
-		 */
-		boardingStops.removeIf(rs -> rs == null || rs.getRouteId() == null || rs.getRouteId().trim().isEmpty());
-
-		if (boardingStops.isEmpty()) {
-			return null;
-		}
-
-		Set<String> candidateRouteIds = boardingStops.stream().map(RouteStop::getRouteId)
-				.filter(id -> id != null && !id.trim().isEmpty()).map(String::trim).collect(Collectors.toSet());
-
-		if (candidateRouteIds.isEmpty()) {
-			return null;
-		}
-
-		List<RouteStop> destinationStops = collection
-				.find(Filters.and(Filters.in("routeId", candidateRouteIds), Filters.eq("stopId", destinationId)))
-				.into(new ArrayList<>());
-
-		if (destinationStops == null || destinationStops.isEmpty()) {
-
-			return null;
-		}
-
-		destinationStops.removeIf(rs -> rs == null || rs.getRouteId() == null || rs.getRouteId().trim().isEmpty());
-
-		/*
-		 * Find a route where destination comes after boarding.
-		 */
-		for (RouteStop boardingStop : boardingStops) {
-
-			if (boardingStop == null || boardingStop.getRouteId() == null) {
-
-				continue;
-			}
-
-			String boardingRouteId = boardingStop.getRouteId().trim();
-
-			for (RouteStop destinationStop : destinationStops) {
-
-				if (destinationStop == null || destinationStop.getRouteId() == null) {
-
-					continue;
-				}
-
-				String destinationRouteId = destinationStop.getRouteId().trim();
-
-				if (boardingRouteId.equals(destinationRouteId)
-						&& destinationStop.getStopOrder() > boardingStop.getStopOrder()) {
-
-					return boardingRouteId;
-				}
-			}
-		}
-
-		return null;
+	public List<RouteStop> getRouteStops(String routeId) {
+		return routeStopCollection.find(eq("routeId", routeId)).into(new ArrayList<>());
 	}
 
-	/*
-	 * Get all RouteStop records for a route, ordered by stopOrder.
-	 */
-	public List<RouteStop> getRouteStopsByRouteId(String routeId) {
+	public List<Schedule> findSchedulesByRouteId(String routeId) {
+		return scheduleCollection.find(eq("routeId", routeId)).into(new ArrayList<>());
+	}
 
-		if (routeId == null || routeId.trim().isEmpty()) {
-			return new ArrayList<>();
+	public List<String> findMatchingRouteIds(String sourceId, String destId) {
+		List<String> routeIds = new ArrayList<>();
+		List<RouteStop> sources = routeStopCollection.find(eq("stopId", sourceId)).into(new ArrayList<>());
+
+		for (RouteStop src : sources) {
+			RouteStop dest = routeStopCollection.find(and(eq("routeId", src.getRouteId()), eq("stopId", destId)))
+					.first();
+			if (dest != null && src.getStopOrder() < dest.getStopOrder()) {
+				routeIds.add(src.getRouteId());
+			}
 		}
+		return routeIds;
+	}
 
-		MongoCollection<RouteStop> collection = database.getCollection(MongoDBConfig.COLLECTION_ROUTE_STOPS,
-				RouteStop.class);
-
-		List<RouteStop> routeStops = collection.find(Filters.eq("routeId", routeId.trim()))
-				.sort(Sorts.ascending("stopOrder")).into(new ArrayList<>());
-
-		if (routeStops == null || routeStops.isEmpty()) {
-			return new ArrayList<>();
+	public List<RouteStop> getRouteStopsForRoutes(List<String> routeIds) {
+		List<RouteStop> result = new ArrayList<>();
+		for (String id : routeIds) {
+			result.addAll(getRouteStops(id));
 		}
+		return result;
+	}
 
-		/*
-		 * Do not allow null RouteStop objects to enter ETA calculation.
-		 */
-		routeStops.removeIf(rs -> rs == null);
+	public List<BusLocation> findBusesByRouteId(String routeId) {
+		return busLocationCollection.find(eq("routeId", routeId)).into(new ArrayList<>());
+	}
 
-		return routeStops;
+	public BusLocation findBusById(String busId) {
+		return busLocationCollection.find(eq("busId", busId)).first();
+	}
+
+	public List<BusLocation> findAllBuses() {
+		return busLocationCollection.find().into(new ArrayList<>());
 	}
 }

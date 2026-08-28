@@ -2,30 +2,40 @@ package dto;
 
 public class RouteStopDetailDTO {
 
-    private String stopId;
     private String stopName;
-    private int stopOrder;
-    private String expectedArrivalText;
-    private String distanceAwayText;
-    private boolean isCurrentStop;
+    private double remainingDistance;
+    private long eta;
 
-    public RouteStopDetailDTO() {}
+    public RouteStopDetailDTO() {
+    }
 
-    public String getStopId() { return stopId; }
-    public void setStopId(String stopId) { this.stopId = stopId; }
+    public RouteStopDetailDTO(String stopName, double remainingDistance, long eta) {
+        this.stopName = stopName;
+        this.remainingDistance = remainingDistance;
+        this.eta = eta;
+    }
 
-    public String getStopName() { return stopName; }
-    public void setStopName(String stopName) { this.stopName = stopName; }
+    public String getStopName() {
+        return stopName;
+    }
 
-    public int getStopOrder() { return stopOrder; }
-    public void setStopOrder(int stopOrder) { this.stopOrder = stopOrder; }
+    public void setStopName(String stopName) {
+        this.stopName = stopName;
+    }
 
-    public String getExpectedArrivalText() { return expectedArrivalText; }
-    public void setExpectedArrivalText(String expectedArrivalText) { this.expectedArrivalText = expectedArrivalText; }
+    public double getRemainingDistance() {
+        return remainingDistance;
+    }
 
-    public String getDistanceAwayText() { return distanceAwayText; }
-    public void setDistanceAwayText(String distanceAwayText) { this.distanceAwayText = distanceAwayText; }
+    public void setRemainingDistance(double remainingDistance) {
+        this.remainingDistance = remainingDistance;
+    }
 
-    public boolean isCurrentStop() { return isCurrentStop; }
-    public void setCurrentStop(boolean currentStop) { isCurrentStop = currentStop; }
+    public long getEta() {
+        return eta;
+    }
+
+    public void setEta(long eta) {
+        this.eta = eta;
+    }
 }

@@ -14,7 +14,8 @@ public class ETARequest {
         this.travelTime = travelTime;
     }
 
-    public String getBoardingStop() { return boardingStop; }
+    public String getBoardingStop() {
+    	return boardingStop; }
     public void setBoardingStop(String boardingStop) { this.boardingStop = boardingStop; }
 
     public String getDestinationStop() { return destinationStop; }

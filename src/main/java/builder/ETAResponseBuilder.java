@@ -1,5 +1,6 @@
 package builder;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import dto.ETAResponse;
@@ -17,48 +18,197 @@ public class ETAResponseBuilder {
 			long destinationEta, String boardingArrivalTime, String destinationArrivalTime,
 			List<RouteStopDetailDTO> timeline) {
 
-		return new ETAResponse(bus.getBusId(), null, bus.getStatus(), null, speed, bus.getCurrentStopName(),
-				bus.getNextStopName(), bus.getDistanceRemaining(), boardingRS.getStopName(), boardingDistance,
-				String.valueOf(boardingEta), boardingArrivalTime, destinationRS.getStopName(), tripDistance,
-				String.valueOf(destinationEta), destinationArrivalTime, route.getSource(), "N/A", 0.0, 0.0,
-				bus.getLastUpdated(), timeline);
+		ETAResponse response = new ETAResponse();
+
+		response.setBusId(bus.getBusId());
+		response.setBusNumber(getBusNumber(bus));
+		response.setStatus(bus.getStatus());
+		response.setSpeed(speed);
+
+		response.setCurrentStop(bus.getCurrentStopName());
+		response.setNextStop(bus.getNextStopName());
+		response.setDistanceToNextStop(bus.getDistanceRemaining());
+
+		response.setBoardingStop(boardingRS.getStopName());
+		response.setDestinationStop(destinationRS.getStopName());
+
+		response.setRemainingDistanceToBoardingStop(boardingDistance);
+
+		response.setEtaToBoardingStop(boardingEta);
+
+		response.setBusArrivalTimeAtBoardingStop(boardingArrivalTime);
+
+		response.setRemainingDistanceToDestination(boardingDistance + tripDistance);
+
+		response.setEtaToDestinationStop(destinationEta);
+
+		response.setBusArrivalTimeAtDestinationStop(destinationArrivalTime);
+
+		response.setStartingFrom(route.getSource());
+
+		response.setDepartureTime("N/A");
+
+		response.setLastUpdated(bus.getLastUpdated());
+
+		response.setRouteStops(timeline);
+
+		return response;
 	}
 
 	public ETAResponse buildScheduledBusResponse(Schedule schedule, Route route, RouteStop boardingRS,
-			RouteStop destinationRS, String departureTime, String arrivalTime) {
+			RouteStop destinationRS, String departureTime, String arrivalTime, List<RouteStop> routeStops) {
 
-		return new ETAResponse(schedule.getScheduleId(), null, "SCHEDULED", "Scheduled", 0.0, "N/A",
-				boardingRS.getStopName(), 0.0, boardingRS.getStopName(), 0.0, "Scheduled", departureTime,
-				destinationRS.getStopName(), 0.0, "Scheduled", arrivalTime, route.getSource(), departureTime, 0.0, 0.0,
-				"N/A", null);
+		ETAResponse response = new ETAResponse();
+
+		response.setBusId(schedule.getScheduleId());
+
+		response.setBusNumber(getScheduleBusNumber(schedule));
+
+		response.setStatus("SCHEDULED");
+
+		response.setSpeed(0.0);
+
+		response.setCurrentStop(route.getSource());
+
+		response.setNextStop(getNextStop(routeStops, boardingRS));
+
+		response.setDistanceToNextStop(getDistanceToNextStop(routeStops, boardingRS));
+
+		response.setBoardingStop(boardingRS.getStopName());
+
+		response.setDestinationStop(destinationRS.getStopName());
+
+		response.setRemainingDistanceToBoardingStop(0.0);
+
+		/*
+		 * Scheduled bus does not have a running ETA. -1 means
+		 * "not available/applicable". The mobile app can use status = SCHEDULED to
+		 * display the scheduled departure/arrival time.
+		 */
+		response.setEtaToBoardingStop(-1);
+
+		response.setBusArrivalTimeAtBoardingStop(departureTime);
+
+		response.setRemainingDistanceToDestination(0.0);
+
+		response.setEtaToDestinationStop(-1);
+
+		response.setBusArrivalTimeAtDestinationStop(arrivalTime);
+
+		response.setStartingFrom(route.getSource());
+
+		response.setDepartureTime(departureTime);
+
+		response.setLastUpdated("N/A");
+
+		response.setRouteStops(new ArrayList<>());
+
+		return response;
 	}
 
 	public ETAResponse buildNotificationResponse(BusLocation bus, Route route, Stop boardingStop, double distance,
-			long etaMinutes, String arrivalTime, List<RouteStopDetailDTO> timeline) {
+			long eta, String arrivalTime, List<RouteStopDetailDTO> timeline) {
 
-		return new ETAResponse(bus.getBusId(), null, bus.getStatus(), null, bus.getSpeed(), bus.getCurrentStopName(),
-				bus.getNextStopName(), bus.getDistanceRemaining(), boardingStop.getStopName(), distance,
-				String.valueOf(etaMinutes), arrivalTime, "N/A", 0.0, "N/A", "N/A", route.getSource(), "N/A", 0.0, 0.0,
-				bus.getLastUpdated(), timeline);
+		ETAResponse response = new ETAResponse();
+
+		response.setBusId(bus.getBusId());
+
+		response.setBusNumber(getBusNumber(bus));
+
+		response.setStatus(bus.getStatus());
+
+		response.setSpeed(bus.getSpeed());
+
+		response.setCurrentStop(bus.getCurrentStopName());
+
+		response.setNextStop(bus.getNextStopName());
+
+		response.setDistanceToNextStop(bus.getDistanceRemaining());
+
+		response.setBoardingStop(boardingStop.getStopName());
+
+		response.setDestinationStop(boardingStop.getStopName());
+
+		response.setRemainingDistanceToBoardingStop(distance);
+
+		// ETA is returned as total minutes
+		response.setEtaToBoardingStop(eta);
+
+		response.setBusArrivalTimeAtBoardingStop(arrivalTime);
+
+		response.setRemainingDistanceToDestination(0.0);
+
+		response.setEtaToDestinationStop(-1);
+
+		response.setBusArrivalTimeAtDestinationStop("N/A");
+
+		response.setStartingFrom(route.getSource());
+
+		response.setDepartureTime("N/A");
+
+		response.setLastUpdated(bus.getLastUpdated());
+
+		response.setRouteStops(timeline);
+
+		return response;
 	}
 
-	public RouteStopDetailDTO buildRouteStopDetail(RouteStop routeStop, String expectedArrivalText, double distanceAway,
-			boolean isCurrentStop) {
+	private String getBusNumber(BusLocation bus) {
 
-		RouteStopDetailDTO dto = new RouteStopDetailDTO();
+		try {
 
-		dto.setStopId(routeStop.getStopId());
+			return (String) bus.getClass().getMethod("getBusNumber").invoke(bus);
 
-		dto.setStopName(routeStop.getStopName());
+		} catch (Exception ignored) {
 
-		dto.setStopOrder(routeStop.getStopOrder());
+			return bus.getBusId();
+		}
+	}
 
-		dto.setExpectedArrivalText(expectedArrivalText);
+	private String getScheduleBusNumber(Schedule schedule) {
 
-		dto.setDistanceAwayText(String.format("%.2f km", distanceAway));
+		try {
 
-		dto.setCurrentStop(isCurrentStop);
+			return (String) schedule.getClass().getMethod("getBusNumber").invoke(schedule);
 
-		return dto;
+		} catch (Exception ignored) {
+
+			return schedule.getScheduleId();
+		}
+	}
+
+	private String getNextStop(List<RouteStop> routeStops, RouteStop boardingRS) {
+
+		int boardingOrder = boardingRS.getStopOrder();
+
+		for (RouteStop rs : routeStops) {
+
+			if (rs.getStopOrder() == boardingOrder + 1) {
+
+				return rs.getStopName();
+			}
+		}
+
+		return "N/A";
+	}
+
+	private double getDistanceToNextStop(List<RouteStop> routeStops, RouteStop boardingRS) {
+
+		int boardingOrder = boardingRS.getStopOrder();
+
+		for (RouteStop rs : routeStops) {
+
+			if (rs.getStopOrder() == boardingOrder + 1) {
+
+				return rs.getDistanceFromPrevious();
+			}
+		}
+
+		return 0.0;
+	}
+
+	public RouteStopDetailDTO buildRouteStopDetail(RouteStop routeStop, double distance, long eta) {
+
+		return new RouteStopDetailDTO(routeStop.getStopName(), distance, eta);
 	}
 }
